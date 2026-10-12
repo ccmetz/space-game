@@ -3,7 +3,6 @@ import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import './style.css';
 
 function element<T extends HTMLElement>(id: string): T {
   const result = document.getElementById(id);
@@ -20,6 +19,7 @@ try {
 } catch (cause) {
   error.hidden = false;
   error.textContent = `Unable to start the flight. Please use a browser with WebGL 2 and hardware acceleration enabled. ${String(cause)}`;
+  app.hidden = false;
 }
 
 function startGame() {
@@ -44,6 +44,10 @@ function startGame() {
   const rimLight = new THREE.DirectionalLight('#77b8d9', 1.5);
   rimLight.position.set(100, -20, -100);
   scene.add(rimLight);
+  const previewLight = new THREE.DirectionalLight('#e0efff', 3);
+  previewLight.position.set(12, 15, 20);
+  previewLight.visible = false;
+  scene.add(previewLight);
 
   // A seeded sky stays the same after refresh and keeps the scene easy to reproduce.
   let seed = 74021;
@@ -197,58 +201,164 @@ function startGame() {
   const darkHull = new THREE.MeshStandardMaterial({ color: '#34414b', metalness: 0.65, roughness: 0.4 });
   const red = new THREE.MeshStandardMaterial({ color: '#a75643', metalness: 0.4, roughness: 0.5 });
   const glass = new THREE.MeshStandardMaterial({ color: '#162c3b', metalness: 0.8, roughness: 0.15 });
-  function box(width: number, height: number, depth: number, material: THREE.Material, x: number, y: number, z: number, parent: THREE.Group = model) {
+  let assembly = new THREE.Group();
+  model.add(assembly);
+  function box(width: number, height: number, depth: number, material: THREE.Material, x: number, y: number, z: number, parent: THREE.Group = assembly) {
     const mesh = new THREE.Mesh(new THREE.BoxGeometry(width, height, depth), material);
     mesh.position.set(x, y, z);
     parent.add(mesh);
     return mesh;
   }
-  function cylinder(top: number, bottom: number, length: number, material: THREE.Material, x: number, y: number, z: number, parent: THREE.Group = model) {
+  function cylinder(top: number, bottom: number, length: number, material: THREE.Material, x: number, y: number, z: number, parent: THREE.Group = assembly) {
     const mesh = new THREE.Mesh(new THREE.CylinderGeometry(top, bottom, length, 12), material);
     mesh.rotation.x = Math.PI / 2;
     mesh.position.set(x, y, z);
     parent.add(mesh);
     return mesh;
   }
+  const engineGlows: THREE.Sprite[] = [];
+  const flames: THREE.Mesh<THREE.ConeGeometry, THREE.MeshBasicMaterial>[] = [];
+  const engineMaterial = new THREE.MeshBasicMaterial({ color: new THREE.Color(1.2, 0.45, 2.4) });
+  function addEngine(x: number, y: number, z: number, parent = assembly, radius = 0.62) {
+    cylinder(radius, radius * 1.1, 3.8, hull, x, y, z, parent);
+    cylinder(radius * 0.77, radius * 0.77, 0.3, darkHull, x, y, z + 2, parent);
+    cylinder(radius * 0.61, radius * 0.61, 0.12, engineMaterial, x, y, z + 2.2, parent);
+    const engineGlow = glow('#ae96ff', 3, 0.8);
+    engineGlow.position.set(x, y, z + 2.3);
+    parent.add(engineGlow);
+    engineGlows.push(engineGlow);
+    const flame = new THREE.Mesh(new THREE.ConeGeometry(radius * 0.56, 3, 16), new THREE.MeshBasicMaterial({ color: '#a7b6ff', transparent: true, opacity: 0.4, blending: THREE.AdditiveBlending, depthWrite: false }));
+    flame.rotation.x = Math.PI / 2;
+    flame.position.set(x, y, z + 3.5);
+    parent.add(flame);
+    flames.push(flame);
+  }
+
   cylinder(0.17, 1, 11, hull, 0, 0, -2);
   box(1.8, 1.25, 4, hull, 0, 0, 2.3);
   const cockpit = box(1.18, 0.7, 2.8, glass, 0, 0.8, -0.1);
   cockpit.rotation.x = -0.13;
   box(0.24, 0.05, 6.5, red, 0, 0.6, -4.3);
   box(1.2, 0.4, 1.1, darkHull, 0, 0.86, 2.8);
-  const engineGlows: THREE.Sprite[] = [];
-  const flames: THREE.Mesh<THREE.ConeGeometry, THREE.MeshBasicMaterial>[] = [];
   // Four separate wing assemblies form the open X silhouette, with a cannon and engine on each.
   for (const side of [-1, 1]) {
     for (const level of [-1, 1]) {
       const wing = new THREE.Group();
       wing.rotation.z = side * level * 0.28;
       wing.position.set(side * 0.65, level * 0.25, 1.8);
-      model.add(wing);
+      assembly.add(wing);
       box(5.6, 0.16, 2.1, hull, side * 2.8, 0, 0, wing);
       box(1.1, 0.19, 2.12, red, side * 4.7, 0, 0, wing);
       box(1.3, 0.22, 1.4, darkHull, side * 1.4, 0, 0.2, wing);
-      cylinder(0.62, 0.68, 3.8, hull, side * 1.9, 0, 0.5, wing);
-      cylinder(0.48, 0.48, 0.3, darkHull, side * 1.9, 0, 2.5, wing);
+      addEngine(side * 1.9, 0, 0.5, wing);
       cylinder(0.09, 0.13, 6.4, hull, side * 5.55, 0, -1.5, wing);
       cylinder(0.06, 0.08, 1.6, darkHull, side * 5.55, 0, -5.1, wing);
-      cylinder(0.38, 0.38, 0.12, new THREE.MeshBasicMaterial({ color: new THREE.Color(1.2, 0.45, 2.4) }), side * 1.9, 0, 2.7, wing);
-      const engineGlow = glow('#ae96ff', 3, 0.8);
-      engineGlow.position.set(side * 1.9, 0, 2.8);
-      wing.add(engineGlow);
-      engineGlows.push(engineGlow);
-      const flame = new THREE.Mesh(new THREE.ConeGeometry(0.35, 3, 16), new THREE.MeshBasicMaterial({ color: '#a7b6ff', transparent: true, opacity: 0.4, blending: THREE.AdditiveBlending, depthWrite: false }));
-      flame.rotation.x = Math.PI / 2;
-      flame.position.set(side * 1.9, 0, 4);
-      wing.add(flame);
-      flames.push(flame);
     }
   }
+  const pathfinder = assembly;
+
+  assembly = new THREE.Group();
+  model.add(assembly);
+  const deltaShape = new THREE.Shape();
+  deltaShape.moveTo(0, 7);
+  deltaShape.lineTo(-7, -3);
+  deltaShape.lineTo(0, -1.5);
+  deltaShape.lineTo(7, -3);
+  deltaShape.closePath();
+  const deltaWing = new THREE.Mesh(new THREE.ExtrudeGeometry(deltaShape, { depth: 0.3, bevelEnabled: false }), hull);
+  deltaWing.rotation.x = -Math.PI / 2;
+  deltaWing.position.y = -0.5;
+  assembly.add(deltaWing);
+  cylinder(0.12, 0.85, 9, hull, 0, 0, -1.8);
+  box(1.1, 0.65, 2.8, glass, 0, 0.65, -1.2).rotation.x = -0.18;
+  box(0.2, 2, 2.3, red, 0, 1.25, 2.5).rotation.x = -0.25;
+  for (const side of [-1, 1]) {
+    box(0.6, 0.15, 4.8, red, side * 3.5, -0.1, 0.7).rotation.y = side * 0.5;
+    addEngine(side * 2.2, -0.1, 1.7);
+    cylinder(0.09, 0.15, 4.5, darkHull, side * 5.7, -0.2, 0.5);
+  }
+  const arrow = assembly;
+
+  assembly = new THREE.Group();
+  model.add(assembly);
+  box(3.6, 1.8, 7, hull, 0, 0, 0);
+  cylinder(0.6, 1.8, 4, hull, 0, 0, -4.5);
+  box(2.1, 0.65, 2.7, glass, 0, 1.2, -2.1).rotation.x = -0.15;
+  box(1.8, 0.3, 3, darkHull, 0, 1.1, 1.5);
+  box(0.45, 0.1, 4.5, red, 0, 0.98, -1.5);
+  for (const side of [-1, 1]) {
+    box(3.2, 0.5, 2.7, darkHull, side * 2.8, 0, 1.6);
+    box(1.8, 2, 4.7, hull, side * 4.1, 0, 0.7);
+    box(1.85, 0.12, 1, red, side * 4.1, 1.05, 0.5);
+    box(0.18, 1.7, 2.5, red, side * 4.1, 1.45, 1.7).rotation.x = -0.15;
+    addEngine(side * 4.1, 0, 1.6, assembly, 0.95);
+  }
+  const atlas = assembly;
+  const shipTypes = [
+    { id: 'pathfinder', name: 'Pathfinder', code: 'SF–01', model: pathfinder },
+    { id: 'arrow', name: 'Arrow', code: 'IN–02', model: arrow },
+    { id: 'atlas', name: 'Atlas', code: 'EX–03', model: atlas },
+  ];
+  const paints = [
+    { id: 'ivory', name: 'Ivory', hull: '#b9bbb6', accent: '#a75643', engine: '#ae96ff' },
+    { id: 'graphite', name: 'Graphite', hull: '#424953', accent: '#d7bd83', engine: '#ffbd77' },
+    { id: 'cobalt', name: 'Cobalt', hull: '#315c94', accent: '#96d7e1', engine: '#77dbff' },
+    { id: 'crimson', name: 'Crimson', hull: '#a8403c', accent: '#e1d1ad', engine: '#ffad94' },
+  ];
+  let selectedShip = 0;
+  let selectedPaint = 0;
+  try {
+    selectedShip = Math.max(0, shipTypes.findIndex((item) => item.id === localStorage.getItem('starbound.ship')));
+    selectedPaint = Math.max(0, paints.findIndex((item) => item.id === localStorage.getItem('starbound.paint')));
+  } catch {
+    // Browsers can block storage; choosing a ship still works for this session.
+  }
+  let confirmedShip = selectedShip;
+  let confirmedPaint = selectedPaint;
+  let choosingShip = false;
+  const selectionPanel = element('ship-selection');
+  const intro = element('intro');
+  const chooseShipButton = element('choose-ship-button');
+  const shipOptions = document.querySelectorAll<HTMLButtonElement>('[data-ship]');
+  const paintOptions = document.querySelectorAll<HTMLButtonElement>('[data-paint]');
+
+  // All three models share the paint materials. Keep them built so switching ships
+  // changes the preview instantly without creating more graphics resources each time.
+  function updateShipSelection() {
+    shipTypes.forEach((type, index) => { type.model.visible = index === selectedShip; });
+    shipOptions.forEach((button, index) => {
+      button.classList.toggle('selected', index === selectedShip);
+      button.setAttribute('aria-pressed', String(index === selectedShip));
+    });
+    paintOptions.forEach((button, index) => {
+      button.classList.toggle('selected', index === selectedPaint);
+      button.setAttribute('aria-pressed', String(index === selectedPaint));
+    });
+    const paint = paints[selectedPaint];
+    hull.color.set(paint.hull);
+    red.color.set(paint.accent);
+    engineMaterial.color.set(paint.engine).multiplyScalar(2.2);
+    engineGlows.forEach((engine) => engine.material.color.set(paint.engine));
+    flames.forEach((flame) => flame.material.color.set(paint.engine));
+    element('paint-name').textContent = paint.name;
+    element('ship-code').textContent = shipTypes[selectedShip].code;
+    element('ship-name').textContent = shipTypes[selectedShip].name.toUpperCase();
+    chooseShipButton.setAttribute('aria-label', `Choose ship, current selection: ${shipTypes[selectedShip].name}, ${paint.name}`);
+  }
+  updateShipSelection();
 
   const keys = new Set<string>();
   const speedLabel = element('speed');
   const speedMeter = element('speed-meter');
   const boostLabel = element('boost-label');
+  const throttleLabel = element('throttle');
+  const headingLabel = element('heading');
+  const headingTape = element('heading-tape');
+  const headingMarks = document.querySelectorAll<HTMLElement>('.heading-mark');
+  const pitchLabel = element('pitch');
+  const bankLabel = element('bank');
+  const attitudeRoll = element('attitude-roll');
+  const pitchLadder = element('pitch-ladder');
   const flightState = element('flight-state');
   const distanceLabel = element('distance');
   const discoveredLabel = element('discovered');
@@ -273,6 +383,7 @@ function startGame() {
   let roll = 0;
   let lastTime = 0;
   let hudElapsed = 0;
+  let firstFrameRendered = false;
 
   const forward = new THREE.Vector3();
   const up = new THREE.Vector3();
@@ -281,6 +392,7 @@ function startGame() {
   const markerPosition = new THREE.Vector3();
   const cameraDirection = new THREE.Vector3();
   const separation = new THREE.Vector3();
+  const attitude = new THREE.Euler(0, 0, 0, 'YXZ');
 
   function notify(message: string) {
     notice.textContent = message;
@@ -290,6 +402,13 @@ function startGame() {
   }
 
   function placeCamera(immediate: boolean, dt: number) {
+    if (choosingShip) {
+      const narrowScreen = innerWidth <= 760;
+      camera.position.set(18, narrowScreen ? 11 : 9, narrowScreen ? 29 : 23);
+      camera.up.set(0, 1, 0);
+      camera.lookAt(narrowScreen ? 0 : -16, narrowScreen ? -9 : 0, 0);
+      return;
+    }
     desiredCamera.set(0, 7.5, 29).applyQuaternion(ship.quaternion).add(ship.position);
     lookAt.set(0, 3.5, -48).applyQuaternion(ship.quaternion).add(ship.position);
     up.set(0, 1, 0).applyQuaternion(ship.quaternion);
@@ -304,11 +423,40 @@ function startGame() {
   }
   placeCamera(true, 0);
 
+  function closeShipSelection(confirm: boolean) {
+    if (confirm) {
+      confirmedShip = selectedShip;
+      confirmedPaint = selectedPaint;
+      try {
+        localStorage.setItem('starbound.ship', shipTypes[confirmedShip].id);
+        localStorage.setItem('starbound.paint', paints[confirmedPaint].id);
+      } catch {
+        // Keep the confirmed choice in memory if this browser won't save it.
+      }
+    } else {
+      selectedShip = confirmedShip;
+      selectedPaint = confirmedPaint;
+      updateShipSelection();
+    }
+    choosingShip = false;
+    worlds.forEach((world) => { world.object.visible = true; });
+    moon.visible = true;
+    previewLight.visible = false;
+    app.classList.remove('choosing-ship');
+    selectionPanel.hidden = true;
+    intro.hidden = false;
+    intro.inert = false;
+    model.rotation.set(0, 0, 0);
+    placeCamera(true, 0);
+    chooseShipButton.focus();
+  }
+
   function launch() {
     if (started) return;
     started = true;
     speed = 32;
     app.classList.add('flying');
+    helpPanel.hidden = true;
     element('intro').inert = true;
     element('intro').setAttribute('aria-hidden', 'true');
     notify('Welcome aboard. WASD to steer · Shift to boost · Space to brake.');
@@ -334,6 +482,32 @@ function startGame() {
   }
 
   element('launch-button').addEventListener('click', launch);
+  chooseShipButton.addEventListener('click', () => {
+    if (started) return;
+    choosingShip = true;
+    // Clear the planets from the preview and light the hull so the ship is the focus.
+    worlds.forEach((world) => { world.object.visible = false; });
+    moon.visible = false;
+    previewLight.visible = true;
+    app.classList.add('choosing-ship');
+    intro.hidden = true;
+    intro.inert = true;
+    helpPanel.hidden = true;
+    selectionPanel.hidden = false;
+    model.rotation.set(0, -0.6, 0);
+    placeCamera(true, 0);
+    element<HTMLButtonElement>('back-from-ships').focus();
+  });
+  element('back-from-ships').addEventListener('click', () => closeShipSelection(false));
+  element('confirm-ship-button').addEventListener('click', () => closeShipSelection(true));
+  shipOptions.forEach((button) => button.addEventListener('click', () => {
+    selectedShip = Number(button.dataset.ship);
+    updateShipSelection();
+  }));
+  paintOptions.forEach((button) => button.addEventListener('click', () => {
+    selectedPaint = Number(button.dataset.paint);
+    updateShipSelection();
+  }));
   pauseButton.addEventListener('click', () => setPaused(!paused));
   element('resume-button').addEventListener('click', () => setPaused(false));
   element('help-button').addEventListener('click', () => { helpPanel.hidden = !helpPanel.hidden; });
@@ -359,9 +533,11 @@ function startGame() {
 
   const handledKeys = new Set(['KeyW', 'KeyS', 'KeyA', 'KeyD', 'KeyQ', 'KeyE', 'ShiftLeft', 'ShiftRight', 'Space', 'KeyP', 'Escape', 'KeyR']);
   window.addEventListener('keydown', (event) => {
-    if (handledKeys.has(event.code)) event.preventDefault();
+    if (started && handledKeys.has(event.code)) event.preventDefault();
     if (event.repeat) return;
     if (event.code === 'Escape' && !helpPanel.hidden) { helpPanel.hidden = true; return; }
+    if (choosingShip && event.code === 'Escape') { closeShipSelection(false); return; }
+    if (choosingShip && handledKeys.has(event.code)) return;
     if (event.code === 'KeyP' || event.code === 'Escape') { setPaused(!paused); return; }
     if (event.key === '?') { helpPanel.hidden = !helpPanel.hidden; return; }
     if (event.code === 'KeyR') { reset(); return; }
@@ -391,6 +567,7 @@ function startGame() {
     renderer.setSize(innerWidth, innerHeight);
     composer.setPixelRatio(renderer.getPixelRatio());
     composer.setSize(innerWidth, innerHeight);
+    if (choosingShip) placeCamera(true, 0);
   });
   canvas.addEventListener('webglcontextlost', (event) => {
     event.preventDefault();
@@ -441,6 +618,7 @@ function startGame() {
       placeCamera(false, dt);
     }
     if (!paused) {
+      if (choosingShip) model.rotation.y += dt * 0.22;
       worlds.slice(0, 3).forEach((world) => { world.object.children[0].rotation.y += dt * 0.015; });
       const enginePower = started ? (braking ? 0.3 : boosting ? 1.8 : 1) : 0.65;
       engineGlows.forEach((engine) => {
@@ -460,15 +638,39 @@ function startGame() {
     hudElapsed += dt;
     if (hudElapsed > 0.1 || !started) {
       hudElapsed = 0;
+      // The starting plane is our reference horizon. Reading the ship's orientation
+      // keeps these instruments useful after a turn or roll, rather than just showing key presses.
+      forward.set(0, 0, -1).applyQuaternion(ship.quaternion);
+      attitude.setFromQuaternion(ship.quaternion, 'YXZ');
+      const headingDegrees = (THREE.MathUtils.radToDeg(Math.atan2(forward.x, -forward.z)) + 360) % 360;
+      const pitchDegrees = THREE.MathUtils.radToDeg(Math.asin(THREE.MathUtils.clamp(forward.y, -1, 1)));
+      const bankDegrees = THREE.MathUtils.radToDeg(attitude.z);
+      const headingStep = Math.floor(headingDegrees / 15) * 15;
+      headingLabel.textContent = `${(Math.round(headingDegrees) % 360).toString().padStart(3, '0')}°`;
+      headingTape.style.transform = `translateX(${-67.5 - (headingDegrees - headingStep) * 3}px)`;
+      headingMarks.forEach((mark, index) => {
+        mark.textContent = ((headingStep + (index - 4) * 15 + 360) % 360).toString().padStart(3, '0');
+      });
+      pitchLabel.textContent = `${pitchDegrees < -0.5 ? '−' : '+'}${Math.abs(Math.round(pitchDegrees)).toString().padStart(2, '0')}°`;
+      bankLabel.textContent = `${Math.abs(bankDegrees) < 0.5 ? '' : bankDegrees > 0 ? 'L ' : 'R '}${Math.abs(Math.round(bankDegrees)).toString().padStart(2, '0')}°`;
+      attitudeRoll.style.transform = `rotate(${bankDegrees}deg)`;
+      pitchLadder.style.transform = `translateY(${pitchDegrees * 4}px)`;
+      const throttle = !started || paused || braking ? 0 : boosting ? 100 : Math.round(42 / 180 * 100);
+      throttleLabel.textContent = `${throttle.toString().padStart(2, '0')}%`;
       speedLabel.textContent = Math.round(speed).toString().padStart(2, '0');
       speedMeter.style.width = `${(speed / 180) * 100}%`;
       boostLabel.textContent = paused ? 'PAUSED' : braking ? 'BRAKING' : boosting ? 'BOOST' : 'CRUISE';
-      flightState.textContent = !started ? 'SYSTEMS READY' : paused ? 'FLIGHT PAUSED' : boosting ? 'BOOST ENGAGED' : 'FLIGHT ACTIVE';
+      flightState.textContent = !started ? 'SYSTEMS READY' : paused ? 'FLIGHT PAUSED' : boosting ? 'BOOST ENGAGED' : braking ? 'BRAKING' : 'FREE FLIGHT';
       distanceLabel.textContent = distance.toFixed(1);
       discoveredLabel.textContent = worlds.filter((world) => world.discovered).length.toString().padStart(2, '0');
       targetDistance.textContent = `${Math.max(0, ship.position.distanceTo(target.position) - target.radius).toFixed(0)} KM`;
       targetStatus.textContent = target.discovered ? 'DISCOVERED' : 'UNEXPLORED';
     }
     composer.render();
+    // Show the interface only after the canvas has its first frame.
+    if (!firstFrameRendered) {
+      app.hidden = false;
+      firstFrameRendered = true;
+    }
   });
 }
