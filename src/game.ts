@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { createCharacter } from './character/character.ts';
 import { createCameraController } from './flight/camera.ts';
 import { createFlight } from './flight/flight.ts';
 import { createInput, type InputCommand } from './flight/input.ts';
@@ -54,6 +55,7 @@ export function createGame() {
   const session = createStore(initialSession);
   const telemetry = createStore(initialTelemetry);
   const selection = createShipSelection();
+  const character = createCharacter();
   let runtime: GameRuntime | null = null;
   let stop: (() => void) | null = null;
   let noticeTimeout: ReturnType<typeof setTimeout> | undefined;
@@ -298,6 +300,7 @@ export function createGame() {
     session: { getSnapshot: session.getSnapshot, subscribe: session.subscribe },
     telemetry: { getSnapshot: telemetry.getSnapshot, subscribe: telemetry.subscribe },
     selection,
+    character,
     start,
     launch,
     openShipSelection,

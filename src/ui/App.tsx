@@ -1,11 +1,17 @@
 import { useEffect, useRef, useSyncExternalStore } from 'react';
 import type { Game } from '../game.ts';
+import { CharacterCreation } from './CharacterCreation.tsx';
 import { Hud } from './Hud.tsx';
 import { Menus } from './Menus.tsx';
 import { ShipSelection } from './ShipSelection.tsx';
 import { TouchControls } from './TouchControls.tsx';
 
 export function App({ game }: { game: Game }) {
+  const character = useSyncExternalStore(game.character.subscribe, game.character.getSnapshot);
+  return character.confirmed ? <FlightApp game={game} /> : <CharacterCreation game={game} />;
+}
+
+function FlightApp({ game }: { game: Game }) {
   const session = useSyncExternalStore(game.session.subscribe, game.session.getSnapshot);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const markerRef = useRef<HTMLDivElement>(null);

@@ -3,6 +3,7 @@ import type { Game, Session } from '../game.ts';
 import { paints, shipTypes } from '../ships/catalog.ts';
 
 export function Menus({ game, session }: { game: Game; session: Readonly<Session> }) {
+  const character = useSyncExternalStore(game.character.subscribe, game.character.getSnapshot);
   const choice = useSyncExternalStore(game.selection.subscribe, game.selection.getSnapshot);
   const ship = shipTypes.find((ship) => ship.id === choice.shipId) ?? shipTypes[0];
   const paint = paints.find((paint) => paint.id === choice.paintId) ?? paints[0];
@@ -46,6 +47,12 @@ export function Menus({ game, session }: { game: Game; session: Readonly<Session
         inert={session.started || session.choosingShip}
         aria-hidden={session.started || session.choosingShip}
       >
+        <p className="crew-welcome">Welcome aboard, {character.name}.</p>
+        {!character.saved && (
+          <p role="status">
+            Your character is available this session, but could not be saved in this browser.
+          </p>
+        )}
         <h1>
           Explore
           <br />
@@ -62,6 +69,9 @@ export function Menus({ game, session }: { game: Game; session: Readonly<Session
           className="secondary-button"
         >
           CHOOSE SHIP
+        </button>
+        <button className="secondary-button" onClick={game.character.edit}>
+          EDIT CHARACTER
         </button>
       </div>
       <section

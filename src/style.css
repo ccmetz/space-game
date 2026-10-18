@@ -1,7 +1,7 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap');
 
 :root {
-  font-family: 'DM Sans', sans-serif;
+  font-family: 'IBM Plex Sans', sans-serif;
   color: #e5e9e6;
   background: #060a10;
   font-synthesis: none;
@@ -22,6 +22,7 @@ a {
 }
 button {
   font: inherit;
+  font-family: 'Chakra Petch', sans-serif;
   cursor: pointer;
   color: inherit;
 }
@@ -83,7 +84,7 @@ button:disabled {
   border-bottom: 1px solid var(--line);
 }
 .brand {
-  font-family: 'Space Grotesk', sans-serif;
+  font-family: 'Chakra Petch', sans-serif;
   color: inherit;
   text-decoration: none;
   font-size: 19px;
@@ -100,7 +101,7 @@ button:disabled {
 }
 .brand > span {
   font:
-    9px 'DM Sans',
+    9px 'IBM Plex Sans',
     sans-serif;
   letter-spacing: 1.6px;
   color: var(--muted);
@@ -155,7 +156,7 @@ kbd {
   min-width: 22px;
   height: 22px;
   font:
-    10px 'DM Sans',
+    10px 'IBM Plex Sans',
     sans-serif;
   padding: 0 5px;
   color: #c5ced1;
@@ -191,7 +192,7 @@ kbd {
 }
 h2 {
   font:
-    500 22px 'Space Grotesk',
+    500 22px 'Chakra Petch',
     sans-serif;
   margin: 15px 0 7px;
   letter-spacing: -0.6px;
@@ -340,9 +341,9 @@ h2 {
 }
 h1 {
   font:
-    400 clamp(38px, 4.8vw, 72px)/1.07 'Space Grotesk',
+    400 clamp(38px, 4.8vw, 72px)/1.07 'Chakra Petch',
     sans-serif;
-  letter-spacing: -3px;
+  letter-spacing: -1px;
   margin: 27px 0 23px;
 }
 h1 em {
@@ -503,7 +504,7 @@ h1 em {
 }
 .speed-readout strong {
   font:
-    400 30px 'Space Grotesk',
+    400 30px 'Chakra Petch',
     sans-serif;
 }
 .speed-readout > div > span {
@@ -539,12 +540,12 @@ h1 em {
 }
 .flight-stats strong {
   font:
-    400 20px 'Space Grotesk',
+    400 20px 'Chakra Petch',
     sans-serif;
 }
 .flight-stats small {
   font:
-    9px 'DM Sans',
+    9px 'IBM Plex Sans',
     sans-serif;
   color: var(--muted);
   letter-spacing: 1px;
@@ -841,7 +842,7 @@ h1 em {
   }
   h1 {
     font-size: 43px;
-    letter-spacing: -2px;
+    letter-spacing: -0.5px;
     margin: 18px 0 14px;
   }
   .primary-button {
@@ -1076,7 +1077,7 @@ h1 em {
   color: var(--hud);
   background: #07120f70;
   border-left: 1px solid var(--hud-line);
-  font-family: 'Space Grotesk', monospace;
+  font-family: 'Chakra Petch', monospace;
 }
 .flying .navigation .section-label {
   color: var(--hud-muted);
@@ -1116,7 +1117,7 @@ h1 em {
   width: 270px;
   transform: translateX(-50%);
   color: var(--hud);
-  font-family: 'Space Grotesk', monospace;
+  font-family: 'Chakra Petch', monospace;
   text-align: center;
   pointer-events: none;
 }
@@ -1199,7 +1200,7 @@ h1 em {
   align-items: center;
   justify-content: space-between;
   font:
-    9px 'Space Grotesk',
+    9px 'Chakra Petch',
     monospace;
   opacity: 0.5;
 }
@@ -1255,7 +1256,7 @@ h1 em {
   background: #07120f85;
   border-right: 1px solid var(--hud-line);
   color: var(--hud);
-  font-family: 'Space Grotesk', monospace;
+  font-family: 'Chakra Petch', monospace;
   pointer-events: none;
 }
 .velocity-value {
@@ -1317,7 +1318,7 @@ h1 em {
     0 12px
   );
   color: var(--hud);
-  font-family: 'Space Grotesk', monospace;
+  font-family: 'Chakra Petch', monospace;
 }
 .flying .ship-status {
   min-width: 200px;
@@ -1625,7 +1626,7 @@ h1 em {
 }
 .ship-option strong {
   font:
-    500 16px 'Space Grotesk',
+    500 16px 'Chakra Petch',
     sans-serif;
 }
 .ship-option small {
@@ -1772,5 +1773,349 @@ h1 em {
   }
   .ship-selection .primary-button {
     margin-top: 20px;
+  }
+}
+
+/* The registry is its own scrollable screen, before the flight canvas mounts. */
+.character-creation {
+  height: 100dvh;
+  overflow-y: auto;
+  padding: 0 clamp(22px, 5vw, 90px) 28px;
+  background: radial-gradient(ellipse at 20% 55%, #19323960, transparent 55%), #090f16;
+}
+.registration-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  min-height: 88px;
+  border-bottom: 1px solid var(--line);
+}
+.registration-header > span:last-child {
+  font-size: 9px;
+  letter-spacing: 2px;
+  color: var(--muted);
+}
+.character-creation form {
+  max-width: 1400px;
+  margin: auto;
+}
+.registration-title {
+  padding: 35px 0 28px;
+}
+.registration-title h1 {
+  font-size: clamp(32px, 3.3vw, 50px);
+  line-height: 1.08;
+  margin: 14px 0;
+  letter-spacing: -0.5px;
+}
+.registration-title h1 br {
+  display: none;
+}
+.registration-title h1 em {
+  color: var(--accent);
+  font-style: normal;
+}
+
+.character-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  max-width: 850px;
+  gap: clamp(25px, 4vw, 65px);
+}
+.character-preview {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  border: 1px solid var(--line);
+  background: linear-gradient(145deg, #18343a40, #0b131b);
+  min-width: 0;
+}
+
+.character-preview svg {
+  width: 100%;
+  height: 350px;
+  flex: 1;
+  min-height: 260px;
+}
+.portrait-caption {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border-top: 1px solid var(--line);
+}
+.portrait-caption strong {
+  font:
+    500 20px 'Chakra Petch',
+    sans-serif;
+  overflow-wrap: anywhere;
+}
+
+.character-creation h2 {
+  font:
+    500 18px 'Chakra Petch',
+    sans-serif;
+  margin: 0 0 25px;
+}
+
+.name-label,
+.character-creation legend {
+  display: block;
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+.character-creation input {
+  font: inherit;
+  font-size: 14px;
+  color: inherit;
+  width: 100%;
+  border: 1px solid #889b9f55;
+  background: #121d26;
+  border-radius: 3px;
+  padding: 13px;
+}
+.character-creation input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+.field-hint {
+  display: block;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.6;
+  margin-top: 9px;
+}
+.character-creation fieldset {
+  border: 0;
+  padding: 0;
+  margin: 25px 0 0;
+}
+.character-swatches {
+  display: flex;
+  gap: 14px;
+  padding: 3px;
+}
+.character-swatches button {
+  width: 33px;
+  height: 33px;
+  border-radius: 50%;
+  border: 2px solid #ffffff25;
+  color: #fff;
+  text-shadow: 0 1px 4px #000;
+}
+.character-swatches button[aria-pressed='true'] {
+  outline: 1px solid var(--accent);
+  outline-offset: 4px;
+}
+.hair-options {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+.hair-options button {
+  flex: 1;
+  padding: 10px 8px;
+  background: #121d26;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  font-size: 12px;
+}
+.hair-options button[aria-pressed='true'] {
+  border-color: var(--accent);
+  background: #c4dac315;
+}
+
+.class-options {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.class-option {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 18px 16px;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  background: #121d2660;
+  text-align: left;
+}
+.class-option:hover,
+.hair-options button:hover {
+  background: #c4dac310;
+}
+.class-option[aria-pressed='true'] {
+  background: #c4dac310;
+  border-color: #c4dac390;
+}
+.class-symbol {
+  color: var(--accent);
+  font-size: 29px;
+  width: 30px;
+  text-align: center;
+}
+.class-option strong {
+  display: block;
+  font:
+    500 17px 'Chakra Petch',
+    sans-serif;
+}
+
+.class-check {
+  margin-left: auto;
+  color: var(--accent);
+}
+.class-description {
+  min-height: 126px;
+  font-size: 12px;
+  line-height: 1.8;
+  color: #b3bfc5;
+  padding-top: 8px;
+}
+.class-description > span {
+  font-size: 10px;
+  color: var(--accent);
+}
+.class-panel > .field-hint {
+  font-size: 10px;
+  margin-top: 15px;
+}
+.registration-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 30px;
+  border-top: 1px solid var(--line);
+  margin-top: 32px;
+  padding-top: 25px;
+}
+.registration-footer p {
+  font-size: 12px;
+  line-height: 1.7;
+  color: var(--muted);
+  margin-bottom: 0;
+}
+.registration-submit {
+  margin-left: auto;
+  text-align: right;
+}
+.registration-submit .primary-button {
+  margin: 0;
+  width: 270px;
+}
+
+.crew-welcome {
+  color: var(--accent);
+  font-size: 14px;
+}
+@media (max-width: 650px) {
+  .registration-header {
+    min-height: 75px;
+  }
+  .registration-header > span:last-child {
+    max-width: 120px;
+    text-align: right;
+    font-size: 8px;
+    line-height: 1.8;
+  }
+  .registration-title h1 br {
+    display: block;
+  }
+  .character-layout {
+    grid-template-columns: 1fr;
+  }
+  .character-preview svg {
+    height: 290px;
+    flex: none;
+  }
+  .class-options {
+    flex-direction: column;
+  }
+  .registration-footer {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .registration-submit {
+    margin-left: 0;
+    text-align: center;
+  }
+  .registration-submit .primary-button {
+    width: 100%;
+  }
+}
+
+.creation-steps {
+  display: flex;
+  gap: 30px;
+  list-style: none;
+  padding: 0;
+  margin: 0 0 20px;
+  color: var(--muted);
+  font-size: 12px;
+}
+.creation-steps [aria-current='step'] {
+  color: var(--accent);
+}
+.registration-title h1:focus {
+  outline: none;
+}
+.class-layout {
+  display: grid;
+  grid-template-columns: minmax(240px, 1fr) minmax(0, 1.7fr);
+  gap: 50px;
+}
+.class-stats {
+  min-width: 0;
+}
+.class-stats table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  text-align: left;
+}
+.class-stats th,
+.class-stats td {
+  padding: 20px 12px;
+  border-bottom: 1px solid var(--line);
+}
+.class-stats th {
+  font-weight: 500;
+}
+.class-stats thead {
+  color: var(--muted);
+}
+.class-stats .selected-stat {
+  color: var(--accent);
+  background: #c4dac30a;
+}
+@media (max-width: 900px) {
+  .class-layout {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+  .class-layout .class-options {
+    flex-direction: row;
+  }
+  .class-layout .class-option {
+    flex: 1;
+  }
+  .class-description {
+    min-height: 0;
+  }
+}
+@media (max-width: 650px) {
+  .class-layout .class-options {
+    flex-direction: column;
+  }
+  .class-stats table {
+    font-size: 11px;
+  }
+  .class-stats th,
+  .class-stats td {
+    padding: 16px 5px;
   }
 }
