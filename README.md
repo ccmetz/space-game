@@ -78,12 +78,3 @@ a second; the target marker moves through a React ref every frame.
 The canvas starts in a React effect. Cleanup stops the render loop, removes input
 and window listeners, clears notification timers, and disposes graphics resources.
 This supports Strict Mode remounts and Vite Fast Refresh without duplicate games.
-
-Use Node.js 22.12 or later for tests. `npm test` runs the suite once, and
-`npm run test:watch` reruns it as files change. Tests use Vitest with the shared
-Vite configuration in a Node environment. `npm run build` checks types in both
-application code and tests.
-
-Keep module-specific tests beside the source file they exercise, using the same
-name with a `.test.ts` or `.test.tsx` suffix. Keep general tests and scenarios
-that exercise several modules together in `tests/`.
