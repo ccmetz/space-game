@@ -53,3 +53,20 @@ Flight automatically pauses when the window loses focus.
 The ship, planets, atmosphere, starfield, and engine glow are generated in code.
 The interface uses Google Fonts with local system font fallbacks. Exploration
 progress is kept for the current session and resets on reload.
+
+## Project structure
+
+- `src/main.ts` starts the game and reports startup failures.
+- `src/game.ts` connects the modules, owns game modes, and runs the frame loop.
+- `src/ships/` owns ship definitions, models, paint materials, and engine effects.
+- `src/worlds/` builds planets and the star, animates surfaces, and tracks discovery and proximity.
+- `src/flight/` owns movement, keyboard/touch input, and follow/preview cameras.
+- `src/graphics/` sets up rendering, lights, the sky, and shared glow resources.
+- `src/ui/` owns DOM updates, menus, navigation, and ship selection with browser storage.
+
+Modules keep their own state. `game.ts` coordinates behavior that affects several
+modules, such as entering the ship preview or stopping flight near a surface.
+Ship, paint, and world controls use stable IDs instead of array positions.
+
+Run the regression tests with `npm test` using Node.js 24 or later. They use Node's
+built-in test runner and TypeScript support, with no additional test dependencies.
