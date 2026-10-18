@@ -26,7 +26,11 @@ function startGame() {
   const scene = new THREE.Scene();
   scene.background = new THREE.Color('#060a12');
   const camera = new THREE.PerspectiveCamera(58, innerWidth / innerHeight, 0.1, 30000);
-  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
+  const renderer = new THREE.WebGLRenderer({
+    canvas,
+    antialias: true,
+    powerPreference: 'high-performance',
+  });
   renderer.setPixelRatio(Math.min(devicePixelRatio, 1.75));
   renderer.setSize(innerWidth, innerHeight);
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -62,13 +66,27 @@ function startGame() {
     const direction = new THREE.Vector3(random() - 0.5, random() - 0.5, random() - 0.5).normalize();
     direction.multiplyScalar(11000 + random() * 5000);
     starPositions.push(direction.x, direction.y, direction.z);
-    const shade = new THREE.Color().setHSL(0.52 + random() * 0.15, random() * 0.28, 0.35 + random() * 0.65);
+    const shade = new THREE.Color().setHSL(
+      0.52 + random() * 0.15,
+      random() * 0.28,
+      0.35 + random() * 0.65,
+    );
     starColors.push(shade.r, shade.g, shade.b);
   }
   const starGeometry = new THREE.BufferGeometry();
   starGeometry.setAttribute('position', new THREE.Float32BufferAttribute(starPositions, 3));
   starGeometry.setAttribute('color', new THREE.Float32BufferAttribute(starColors, 3));
-  const stars = new THREE.Points(starGeometry, new THREE.PointsMaterial({ size: 11, sizeAttenuation: true, vertexColors: true, transparent: true, opacity: 0.9, depthWrite: false }));
+  const stars = new THREE.Points(
+    starGeometry,
+    new THREE.PointsMaterial({
+      size: 11,
+      sizeAttenuation: true,
+      vertexColors: true,
+      transparent: true,
+      opacity: 0.9,
+      depthWrite: false,
+    }),
+  );
   scene.add(stars);
 
   const glowCanvas = document.createElement('canvas');
@@ -84,7 +102,16 @@ function startGame() {
   glowContext.fillRect(0, 0, 128, 128);
   const glowTexture = new THREE.CanvasTexture(glowCanvas);
   function glow(color: THREE.ColorRepresentation, size: number, opacity = 1) {
-    const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTexture, color, transparent: true, opacity, blending: THREE.AdditiveBlending, depthWrite: false }));
+    const sprite = new THREE.Sprite(
+      new THREE.SpriteMaterial({
+        map: glowTexture,
+        color,
+        transparent: true,
+        opacity,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
+      }),
+    );
     sprite.scale.setScalar(size);
     return sprite;
   }
@@ -99,7 +126,11 @@ function startGame() {
   scene.add(nebula);
   for (let i = 0; i < 35; i++) {
     const bright = glow(i % 4 === 0 ? '#f5d2b0' : '#d0e8ff', 40 + random() * 65, 0.8);
-    bright.position.set((random() - 0.5) * 15000, (random() - 0.5) * 10000, -6500 - random() * 3000);
+    bright.position.set(
+      (random() - 0.5) * 15000,
+      (random() - 0.5) * 10000,
+      -6500 - random() * 3000,
+    );
     stars.add(bright);
   }
 
@@ -151,18 +182,39 @@ function startGame() {
     discovered: boolean;
   }
   const worlds: World[] = [];
-  function planet(name: string, position: THREE.Vector3, radius: number, base: string, detail: string, kind: number) {
+  function planet(
+    name: string,
+    position: THREE.Vector3,
+    radius: number,
+    base: string,
+    detail: string,
+    kind: number,
+  ) {
     const object = new THREE.Group();
     object.position.copy(position);
-    const material = new THREE.ShaderMaterial({ vertexShader: planetVertex, fragmentShader: planetFragment, uniforms: { baseColor: { value: new THREE.Color(base) }, detailColor: { value: new THREE.Color(detail) }, kind: { value: kind } } });
+    const material = new THREE.ShaderMaterial({
+      vertexShader: planetVertex,
+      fragmentShader: planetFragment,
+      uniforms: {
+        baseColor: { value: new THREE.Color(base) },
+        detailColor: { value: new THREE.Color(detail) },
+        kind: { value: kind },
+      },
+    });
     object.add(new THREE.Mesh(new THREE.SphereGeometry(radius, 80, 64), material));
     // Only the rim glows, so the atmosphere doesn't wash out the planet's surface.
-    const atmosphere = new THREE.Mesh(new THREE.SphereGeometry(radius * 1.025, 64, 48), new THREE.ShaderMaterial({
-      transparent: true, depthWrite: false, side: THREE.BackSide, blending: THREE.AdditiveBlending,
-      uniforms: { tint: { value: new THREE.Color(kind === 0 ? '#559fae' : '#b9a58e') } },
-      vertexShader: `varying vec3 vNormal; varying vec3 vView; void main(){ vec4 mv=modelViewMatrix*vec4(position,1.0); vNormal=normalize(normalMatrix*normal); vView=normalize(-mv.xyz); gl_Position=projectionMatrix*mv; }`,
-      fragmentShader: `uniform vec3 tint; varying vec3 vNormal; varying vec3 vView; void main(){ float rim=pow(1.0-abs(dot(normalize(vNormal),normalize(vView))),3.5); gl_FragColor=vec4(tint,rim*0.36); }`,
-    }));
+    const atmosphere = new THREE.Mesh(
+      new THREE.SphereGeometry(radius * 1.025, 64, 48),
+      new THREE.ShaderMaterial({
+        transparent: true,
+        depthWrite: false,
+        side: THREE.BackSide,
+        blending: THREE.AdditiveBlending,
+        uniforms: { tint: { value: new THREE.Color(kind === 0 ? '#559fae' : '#b9a58e') } },
+        vertexShader: `varying vec3 vNormal; varying vec3 vView; void main(){ vec4 mv=modelViewMatrix*vec4(position,1.0); vNormal=normalize(normalMatrix*normal); vView=normalize(-mv.xyz); gl_Position=projectionMatrix*mv; }`,
+        fragmentShader: `uniform vec3 tint; varying vec3 vNormal; varying vec3 vView; void main(){ float rim=pow(1.0-abs(dot(normalize(vNormal),normalize(vView))),3.5); gl_FragColor=vec4(tint,rim*0.36); }`,
+      }),
+    );
     object.add(atmosphere);
     scene.add(object);
     const world: World = { name, position, radius, object, discovered: false };
@@ -172,11 +224,34 @@ function startGame() {
 
   planet('Pelagos', new THREE.Vector3(330, 135, -720), 195, '#17495b', '#739c87', 0);
   planet('Cinder', new THREE.Vector3(1100, -170, -1900), 145, '#8c5137', '#c6a77b', 1);
-  const aurelia = planet('Aurelia', new THREE.Vector3(-1250, -180, -2400), 225, '#82725e', '#d4bea1', 2);
-  const rings = new THREE.Mesh(new THREE.RingGeometry(280, 445, 160, 8), new THREE.MeshBasicMaterial({ color: '#bdad94', side: THREE.DoubleSide, transparent: true, opacity: 0.45 }));
+  const aurelia = planet(
+    'Aurelia',
+    new THREE.Vector3(-1250, -180, -2400),
+    225,
+    '#82725e',
+    '#d4bea1',
+    2,
+  );
+  const rings = new THREE.Mesh(
+    new THREE.RingGeometry(280, 445, 160, 8),
+    new THREE.MeshBasicMaterial({
+      color: '#bdad94',
+      side: THREE.DoubleSide,
+      transparent: true,
+      opacity: 0.45,
+    }),
+  );
   rings.rotation.set(1.12, 0.3, -0.25);
   aurelia.object.add(rings);
-  const thinRing = new THREE.Mesh(new THREE.RingGeometry(335, 342, 160), new THREE.MeshBasicMaterial({ color: '#12151e', side: THREE.DoubleSide, transparent: true, opacity: 0.85 }));
+  const thinRing = new THREE.Mesh(
+    new THREE.RingGeometry(335, 342, 160),
+    new THREE.MeshBasicMaterial({
+      color: '#12151e',
+      side: THREE.DoubleSide,
+      transparent: true,
+      opacity: 0.85,
+    }),
+  );
   thinRing.rotation.copy(rings.rotation);
   // Lift the dark gap just above the main ring so the two surfaces don't flicker.
   thinRing.position.set(0, 0, 0.3).applyEuler(rings.rotation);
@@ -185,11 +260,25 @@ function startGame() {
   const sunPosition = new THREE.Vector3(-850, 380, -1900);
   const sun = new THREE.Group();
   sun.position.copy(sunPosition);
-  sun.add(new THREE.Mesh(new THREE.SphereGeometry(120, 48, 40), new THREE.MeshBasicMaterial({ color: new THREE.Color(3.2, 2.4, 1.1) })));
+  sun.add(
+    new THREE.Mesh(
+      new THREE.SphereGeometry(120, 48, 40),
+      new THREE.MeshBasicMaterial({ color: new THREE.Color(3.2, 2.4, 1.1) }),
+    ),
+  );
   sun.add(glow('#ffcc80', 1100, 0.55));
   scene.add(sun);
-  worlds.push({ name: 'Solace', position: sunPosition, radius: 120, object: sun, discovered: false });
-  const moon = new THREE.Mesh(new THREE.SphereGeometry(31, 32, 24), new THREE.MeshStandardMaterial({ color: '#7b838a', roughness: 1 }));
+  worlds.push({
+    name: 'Solace',
+    position: sunPosition,
+    radius: 120,
+    object: sun,
+    discovered: false,
+  });
+  const moon = new THREE.Mesh(
+    new THREE.SphereGeometry(31, 32, 24),
+    new THREE.MeshStandardMaterial({ color: '#7b838a', roughness: 1 }),
+  );
   moon.position.set(70, 255, -830);
   scene.add(moon);
 
@@ -197,19 +286,49 @@ function startGame() {
   const model = new THREE.Group();
   ship.add(model);
   scene.add(ship);
-  const hull = new THREE.MeshStandardMaterial({ color: '#b9bbb6', metalness: 0.55, roughness: 0.45 });
-  const darkHull = new THREE.MeshStandardMaterial({ color: '#34414b', metalness: 0.65, roughness: 0.4 });
+  const hull = new THREE.MeshStandardMaterial({
+    color: '#b9bbb6',
+    metalness: 0.55,
+    roughness: 0.45,
+  });
+  const darkHull = new THREE.MeshStandardMaterial({
+    color: '#34414b',
+    metalness: 0.65,
+    roughness: 0.4,
+  });
   const red = new THREE.MeshStandardMaterial({ color: '#a75643', metalness: 0.4, roughness: 0.5 });
-  const glass = new THREE.MeshStandardMaterial({ color: '#162c3b', metalness: 0.8, roughness: 0.15 });
+  const glass = new THREE.MeshStandardMaterial({
+    color: '#162c3b',
+    metalness: 0.8,
+    roughness: 0.15,
+  });
   let assembly = new THREE.Group();
   model.add(assembly);
-  function box(width: number, height: number, depth: number, material: THREE.Material, x: number, y: number, z: number, parent: THREE.Group = assembly) {
+  function box(
+    width: number,
+    height: number,
+    depth: number,
+    material: THREE.Material,
+    x: number,
+    y: number,
+    z: number,
+    parent: THREE.Group = assembly,
+  ) {
     const mesh = new THREE.Mesh(new THREE.BoxGeometry(width, height, depth), material);
     mesh.position.set(x, y, z);
     parent.add(mesh);
     return mesh;
   }
-  function cylinder(top: number, bottom: number, length: number, material: THREE.Material, x: number, y: number, z: number, parent: THREE.Group = assembly) {
+  function cylinder(
+    top: number,
+    bottom: number,
+    length: number,
+    material: THREE.Material,
+    x: number,
+    y: number,
+    z: number,
+    parent: THREE.Group = assembly,
+  ) {
     const mesh = new THREE.Mesh(new THREE.CylinderGeometry(top, bottom, length, 12), material);
     mesh.rotation.x = Math.PI / 2;
     mesh.position.set(x, y, z);
@@ -227,7 +346,16 @@ function startGame() {
     engineGlow.position.set(x, y, z + 2.3);
     parent.add(engineGlow);
     engineGlows.push(engineGlow);
-    const flame = new THREE.Mesh(new THREE.ConeGeometry(radius * 0.56, 3, 16), new THREE.MeshBasicMaterial({ color: '#a7b6ff', transparent: true, opacity: 0.4, blending: THREE.AdditiveBlending, depthWrite: false }));
+    const flame = new THREE.Mesh(
+      new THREE.ConeGeometry(radius * 0.56, 3, 16),
+      new THREE.MeshBasicMaterial({
+        color: '#a7b6ff',
+        transparent: true,
+        opacity: 0.4,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
+      }),
+    );
     flame.rotation.x = Math.PI / 2;
     flame.position.set(x, y, z + 3.5);
     parent.add(flame);
@@ -265,7 +393,10 @@ function startGame() {
   deltaShape.lineTo(0, -1.5);
   deltaShape.lineTo(7, -3);
   deltaShape.closePath();
-  const deltaWing = new THREE.Mesh(new THREE.ExtrudeGeometry(deltaShape, { depth: 0.3, bevelEnabled: false }), hull);
+  const deltaWing = new THREE.Mesh(
+    new THREE.ExtrudeGeometry(deltaShape, { depth: 0.3, bevelEnabled: false }),
+    hull,
+  );
   deltaWing.rotation.x = -Math.PI / 2;
   deltaWing.position.y = -0.5;
   assembly.add(deltaWing);
@@ -308,8 +439,14 @@ function startGame() {
   let selectedShip = 0;
   let selectedPaint = 0;
   try {
-    selectedShip = Math.max(0, shipTypes.findIndex((item) => item.id === localStorage.getItem('starbound.ship')));
-    selectedPaint = Math.max(0, paints.findIndex((item) => item.id === localStorage.getItem('starbound.paint')));
+    selectedShip = Math.max(
+      0,
+      shipTypes.findIndex((item) => item.id === localStorage.getItem('starbound.ship')),
+    );
+    selectedPaint = Math.max(
+      0,
+      paints.findIndex((item) => item.id === localStorage.getItem('starbound.paint')),
+    );
   } catch {
     // Browsers can block storage; choosing a ship still works for this session.
   }
@@ -325,7 +462,9 @@ function startGame() {
   // All three models share the paint materials. Keep them built so switching ships
   // changes the preview instantly without creating more graphics resources each time.
   function updateShipSelection() {
-    shipTypes.forEach((type, index) => { type.model.visible = index === selectedShip; });
+    shipTypes.forEach((type, index) => {
+      type.model.visible = index === selectedShip;
+    });
     shipOptions.forEach((button, index) => {
       button.classList.toggle('selected', index === selectedShip);
       button.setAttribute('aria-pressed', String(index === selectedShip));
@@ -343,7 +482,10 @@ function startGame() {
     element('paint-name').textContent = paint.name;
     element('ship-code').textContent = shipTypes[selectedShip].code;
     element('ship-name').textContent = shipTypes[selectedShip].name.toUpperCase();
-    chooseShipButton.setAttribute('aria-label', `Choose ship, current selection: ${shipTypes[selectedShip].name}, ${paint.name}`);
+    chooseShipButton.setAttribute(
+      'aria-label',
+      `Choose ship, current selection: ${shipTypes[selectedShip].name}, ${paint.name}`,
+    );
   }
   updateShipSelection();
 
@@ -439,7 +581,9 @@ function startGame() {
       updateShipSelection();
     }
     choosingShip = false;
-    worlds.forEach((world) => { world.object.visible = true; });
+    worlds.forEach((world) => {
+      world.object.visible = true;
+    });
     moon.visible = true;
     previewLight.visible = false;
     app.classList.remove('choosing-ship');
@@ -486,7 +630,9 @@ function startGame() {
     if (started) return;
     choosingShip = true;
     // Clear the planets from the preview and light the hull so the ship is the focus.
-    worlds.forEach((world) => { world.object.visible = false; });
+    worlds.forEach((world) => {
+      world.object.visible = false;
+    });
     moon.visible = false;
     previewLight.visible = true;
     app.classList.add('choosing-ship');
@@ -500,22 +646,32 @@ function startGame() {
   });
   element('back-from-ships').addEventListener('click', () => closeShipSelection(false));
   element('confirm-ship-button').addEventListener('click', () => closeShipSelection(true));
-  shipOptions.forEach((button) => button.addEventListener('click', () => {
-    selectedShip = Number(button.dataset.ship);
-    updateShipSelection();
-  }));
-  paintOptions.forEach((button) => button.addEventListener('click', () => {
-    selectedPaint = Number(button.dataset.paint);
-    updateShipSelection();
-  }));
+  shipOptions.forEach((button) =>
+    button.addEventListener('click', () => {
+      selectedShip = Number(button.dataset.ship);
+      updateShipSelection();
+    }),
+  );
+  paintOptions.forEach((button) =>
+    button.addEventListener('click', () => {
+      selectedPaint = Number(button.dataset.paint);
+      updateShipSelection();
+    }),
+  );
   pauseButton.addEventListener('click', () => setPaused(!paused));
   element('resume-button').addEventListener('click', () => setPaused(false));
-  element('help-button').addEventListener('click', () => { helpPanel.hidden = !helpPanel.hidden; });
-  element('close-help').addEventListener('click', () => { helpPanel.hidden = true; });
+  element('help-button').addEventListener('click', () => {
+    helpPanel.hidden = !helpPanel.hidden;
+  });
+  element('close-help').addEventListener('click', () => {
+    helpPanel.hidden = true;
+  });
   destinationButtons.forEach((button) => {
     button.addEventListener('click', () => {
       selectedTarget = Number(button.dataset.target);
-      destinationButtons.forEach((item, index) => item.classList.toggle('active', index === selectedTarget));
+      destinationButtons.forEach((item, index) =>
+        item.classList.toggle('active', index === selectedTarget),
+      );
       targetName.textContent = markerName.textContent = worlds[selectedTarget].name.toUpperCase();
     });
   });
@@ -523,7 +679,9 @@ function startGame() {
     launch();
     setPaused(false);
     const target = worlds[selectedTarget];
-    ship.position.copy(target.position).add(new THREE.Vector3(-target.radius * 1.15, -target.radius * 0.4, target.radius * 3.5));
+    ship.position
+      .copy(target.position)
+      .add(new THREE.Vector3(-target.radius * 1.15, -target.radius * 0.4, target.radius * 3.5));
     ship.quaternion.identity();
     pitch = yaw = roll = 0;
     speed = 32;
@@ -531,21 +689,54 @@ function startGame() {
     notify(`Jump complete. Approaching ${target.name}.`);
   });
 
-  const handledKeys = new Set(['KeyW', 'KeyS', 'KeyA', 'KeyD', 'KeyQ', 'KeyE', 'ShiftLeft', 'ShiftRight', 'Space', 'KeyP', 'Escape', 'KeyR']);
+  const handledKeys = new Set([
+    'KeyW',
+    'KeyS',
+    'KeyA',
+    'KeyD',
+    'KeyQ',
+    'KeyE',
+    'ShiftLeft',
+    'ShiftRight',
+    'Space',
+    'KeyP',
+    'Escape',
+    'KeyR',
+  ]);
   window.addEventListener('keydown', (event) => {
     if (started && handledKeys.has(event.code)) event.preventDefault();
     if (event.repeat) return;
-    if (event.code === 'Escape' && !helpPanel.hidden) { helpPanel.hidden = true; return; }
-    if (choosingShip && event.code === 'Escape') { closeShipSelection(false); return; }
+    if (event.code === 'Escape' && !helpPanel.hidden) {
+      helpPanel.hidden = true;
+      return;
+    }
+    if (choosingShip && event.code === 'Escape') {
+      closeShipSelection(false);
+      return;
+    }
     if (choosingShip && handledKeys.has(event.code)) return;
-    if (event.code === 'KeyP' || event.code === 'Escape') { setPaused(!paused); return; }
-    if (event.key === '?') { helpPanel.hidden = !helpPanel.hidden; return; }
-    if (event.code === 'KeyR') { reset(); return; }
+    if (event.code === 'KeyP' || event.code === 'Escape') {
+      setPaused(!paused);
+      return;
+    }
+    if (event.key === '?') {
+      helpPanel.hidden = !helpPanel.hidden;
+      return;
+    }
+    if (event.code === 'KeyR') {
+      reset();
+      return;
+    }
     if (started && !paused) keys.add(event.code);
   });
   window.addEventListener('keyup', (event) => keys.delete(event.code));
-  window.addEventListener('blur', () => { keys.clear(); setPaused(true); });
-  document.addEventListener('visibilitychange', () => { if (document.hidden) setPaused(true); });
+  window.addEventListener('blur', () => {
+    keys.clear();
+    setPaused(true);
+  });
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) setPaused(true);
+  });
   document.querySelectorAll<HTMLButtonElement>('[data-key]').forEach((button) => {
     const key = button.dataset.key;
     if (!key) return;
@@ -573,7 +764,8 @@ function startGame() {
     event.preventDefault();
     setPaused(true);
     error.hidden = false;
-    error.textContent = 'The graphics connection was interrupted. Reload the page to restart your flight.';
+    error.textContent =
+      'The graphics connection was interrupted. Reload the page to restart your flight.';
   });
 
   renderer.setAnimationLoop((time) => {
@@ -584,15 +776,31 @@ function startGame() {
     const braking = keys.has('Space');
     if (started && !paused) {
       const smoothing = 1 - Math.exp(-4 * dt);
-      pitch = THREE.MathUtils.lerp(pitch, Number(keys.has('KeyW')) - Number(keys.has('KeyS')), smoothing);
-      yaw = THREE.MathUtils.lerp(yaw, Number(keys.has('KeyA')) - Number(keys.has('KeyD')), smoothing);
-      roll = THREE.MathUtils.lerp(roll, Number(keys.has('KeyQ')) - Number(keys.has('KeyE')), smoothing);
+      pitch = THREE.MathUtils.lerp(
+        pitch,
+        Number(keys.has('KeyW')) - Number(keys.has('KeyS')),
+        smoothing,
+      );
+      yaw = THREE.MathUtils.lerp(
+        yaw,
+        Number(keys.has('KeyA')) - Number(keys.has('KeyD')),
+        smoothing,
+      );
+      roll = THREE.MathUtils.lerp(
+        roll,
+        Number(keys.has('KeyQ')) - Number(keys.has('KeyE')),
+        smoothing,
+      );
       ship.rotateX(pitch * dt * 0.75);
       ship.rotateY(yaw * dt * 0.7);
       ship.rotateZ(roll * dt * 1.2);
       ship.quaternion.normalize();
       model.rotation.z = THREE.MathUtils.lerp(model.rotation.z, -yaw * 0.2, smoothing);
-      speed = THREE.MathUtils.lerp(speed, braking ? 0 : boosting ? 180 : 42, 1 - Math.exp(-(braking ? 3 : 1.4) * dt));
+      speed = THREE.MathUtils.lerp(
+        speed,
+        braking ? 0 : boosting ? 180 : 42,
+        1 - Math.exp(-(braking ? 3 : 1.4) * dt),
+      );
       forward.set(0, 0, -1).applyQuaternion(ship.quaternion);
       ship.position.addScaledVector(forward, speed * dt);
       distance += speed * dt;
@@ -603,11 +811,13 @@ function startGame() {
         const gap = separation.length() - world.radius;
         if (gap < world.radius * 1.4 && !world.discovered) {
           world.discovered = true;
-          notify(`${world.name} discovered. A new corner of the universe, just for you.`);
+          notify(`${world.name} discovered.`);
         }
         if (gap < 12) {
           if (separation.lengthSq() < 0.001) separation.set(0, 0, 1);
-          ship.position.copy(world.position).add(separation.normalize().multiplyScalar(world.radius + 12));
+          ship.position
+            .copy(world.position)
+            .add(separation.normalize().multiplyScalar(world.radius + 12));
           speed = 0;
           notify(`${world.name} proximity limit. Turn away to continue exploring.`);
         }
@@ -619,12 +829,16 @@ function startGame() {
     }
     if (!paused) {
       if (choosingShip) model.rotation.y += dt * 0.22;
-      worlds.slice(0, 3).forEach((world) => { world.object.children[0].rotation.y += dt * 0.015; });
+      worlds.slice(0, 3).forEach((world) => {
+        world.object.children[0].rotation.y += dt * 0.015;
+      });
       const enginePower = started ? (braking ? 0.3 : boosting ? 1.8 : 1) : 0.65;
       engineGlows.forEach((engine) => {
         engine.scale.setScalar((2.7 + Math.sin(time * 0.014) * 0.15) * enginePower);
       });
-      flames.forEach((flame) => { flame.scale.y = enginePower; });
+      flames.forEach((flame) => {
+        flame.scale.y = enginePower;
+      });
     }
 
     const target = worlds[selectedTarget];
@@ -632,7 +846,8 @@ function startGame() {
     camera.getWorldDirection(cameraDirection);
     separation.subVectors(target.position, camera.position);
     const inFront = cameraDirection.dot(separation) > 0;
-    marker.hidden = !inFront || Math.abs(markerPosition.x) > 0.93 || Math.abs(markerPosition.y) > 0.75;
+    marker.hidden =
+      !inFront || Math.abs(markerPosition.x) > 0.93 || Math.abs(markerPosition.y) > 0.75;
     marker.style.left = `${(markerPosition.x * 0.5 + 0.5) * innerWidth}px`;
     marker.style.top = `${(-markerPosition.y * 0.5 + 0.5) * innerHeight}px`;
     hudElapsed += dt;
@@ -642,27 +857,50 @@ function startGame() {
       // keeps these instruments useful after a turn or roll, rather than just showing key presses.
       forward.set(0, 0, -1).applyQuaternion(ship.quaternion);
       attitude.setFromQuaternion(ship.quaternion, 'YXZ');
-      const headingDegrees = (THREE.MathUtils.radToDeg(Math.atan2(forward.x, -forward.z)) + 360) % 360;
-      const pitchDegrees = THREE.MathUtils.radToDeg(Math.asin(THREE.MathUtils.clamp(forward.y, -1, 1)));
+      const headingDegrees =
+        (THREE.MathUtils.radToDeg(Math.atan2(forward.x, -forward.z)) + 360) % 360;
+      const pitchDegrees = THREE.MathUtils.radToDeg(
+        Math.asin(THREE.MathUtils.clamp(forward.y, -1, 1)),
+      );
       const bankDegrees = THREE.MathUtils.radToDeg(attitude.z);
       const headingStep = Math.floor(headingDegrees / 15) * 15;
       headingLabel.textContent = `${(Math.round(headingDegrees) % 360).toString().padStart(3, '0')}°`;
       headingTape.style.transform = `translateX(${-67.5 - (headingDegrees - headingStep) * 3}px)`;
       headingMarks.forEach((mark, index) => {
-        mark.textContent = ((headingStep + (index - 4) * 15 + 360) % 360).toString().padStart(3, '0');
+        mark.textContent = ((headingStep + (index - 4) * 15 + 360) % 360)
+          .toString()
+          .padStart(3, '0');
       });
       pitchLabel.textContent = `${pitchDegrees < -0.5 ? '−' : '+'}${Math.abs(Math.round(pitchDegrees)).toString().padStart(2, '0')}°`;
       bankLabel.textContent = `${Math.abs(bankDegrees) < 0.5 ? '' : bankDegrees > 0 ? 'L ' : 'R '}${Math.abs(Math.round(bankDegrees)).toString().padStart(2, '0')}°`;
       attitudeRoll.style.transform = `rotate(${bankDegrees}deg)`;
       pitchLadder.style.transform = `translateY(${pitchDegrees * 4}px)`;
-      const throttle = !started || paused || braking ? 0 : boosting ? 100 : Math.round(42 / 180 * 100);
+      const throttle =
+        !started || paused || braking ? 0 : boosting ? 100 : Math.round((42 / 180) * 100);
       throttleLabel.textContent = `${throttle.toString().padStart(2, '0')}%`;
       speedLabel.textContent = Math.round(speed).toString().padStart(2, '0');
       speedMeter.style.width = `${(speed / 180) * 100}%`;
-      boostLabel.textContent = paused ? 'PAUSED' : braking ? 'BRAKING' : boosting ? 'BOOST' : 'CRUISE';
-      flightState.textContent = !started ? 'SYSTEMS READY' : paused ? 'FLIGHT PAUSED' : boosting ? 'BOOST ENGAGED' : braking ? 'BRAKING' : 'FREE FLIGHT';
+      boostLabel.textContent = paused
+        ? 'PAUSED'
+        : braking
+          ? 'BRAKING'
+          : boosting
+            ? 'BOOST'
+            : 'CRUISE';
+      flightState.textContent = !started
+        ? 'SYSTEMS READY'
+        : paused
+          ? 'FLIGHT PAUSED'
+          : boosting
+            ? 'BOOST ENGAGED'
+            : braking
+              ? 'BRAKING'
+              : 'FREE FLIGHT';
       distanceLabel.textContent = distance.toFixed(1);
-      discoveredLabel.textContent = worlds.filter((world) => world.discovered).length.toString().padStart(2, '0');
+      discoveredLabel.textContent = worlds
+        .filter((world) => world.discovered)
+        .length.toString()
+        .padStart(2, '0');
       targetDistance.textContent = `${Math.max(0, ship.position.distanceTo(target.position) - target.radius).toFixed(0)} KM`;
       targetStatus.textContent = target.discovered ? 'DISCOVERED' : 'UNEXPLORED';
     }

@@ -22,6 +22,9 @@ acceleration is required. To check types and create a production build:
 npm run build
 ```
 
+Lint with `npm run lint`, format with `npm run format`, or check formatting
+without changing files with `npm run format:check`.
+
 Before beginning flight, open **Choose Ship** to preview the Pathfinder
 starfighter, Arrow interceptor, or Atlas explorer. Each has Ivory, Graphite,
 Cobalt, and Crimson paint schemes. **Use This Ship** confirms your selection;
@@ -31,16 +34,16 @@ flight controls and handling for now.
 
 ## Controls
 
-| Key | Action |
-| --- | --- |
-| W / S | Pitch up / down |
-| A / D | Turn left / right |
-| Q / E | Roll left / right |
-| Shift | Hold to boost |
-| Space | Hold to brake |
-| P / Escape | Pause / resume |
-| R | Return to starting coordinates |
-| ? | Show / hide controls |
+| Key        | Action                         |
+| ---------- | ------------------------------ |
+| W / S      | Pitch up / down                |
+| A / D      | Turn left / right              |
+| Q / E      | Roll left / right              |
+| Shift      | Hold to boost                  |
+| Space      | Hold to brake                  |
+| P / Escape | Pause / resume                 |
+| R          | Return to starting coordinates |
+| ?          | Show / hide controls           |
 
 Choose a world in Navigation, then use **Jump to vicinity** to get there quickly.
 Worlds are discovered when you fly close. Planet and star surfaces gently stop

@@ -4,12 +4,21 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#060a10" />
-    <meta name="description" content="Take the helm of a starfighter. A quiet, open space to fly, explore planets, and drift among the stars." />
+    <meta
+      name="description"
+      content="Take the helm of a starfighter. A quiet, open space to fly, explore planets, and drift among the stars."
+    />
     <title>Starbound — Space Flight</title>
     <!-- Keep the page dark while the styles and 3D scene are getting ready. -->
     <style>
-      html, body { margin: 0; background: #060a10; }
-      [hidden] { display: none !important; }
+      html,
+      body {
+        margin: 0;
+        background: #060a10;
+      }
+      [hidden] {
+        display: none !important;
+      }
     </style>
     <link rel="stylesheet" href="/src/style.css" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
@@ -19,37 +28,98 @@
       <canvas id="space" aria-label="Three-dimensional space flight view"></canvas>
       <div class="vignette"></div>
       <header class="topbar">
-        <a class="brand" href="/" aria-label="Starbound home"><svg viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M16 2 20 12 30 16 20 20 16 30 12 20 2 16 12 12Z" stroke="currentColor"/><path d="m16 9 2 5 5 2-5 2-2 5-2-5-5-2 5-2Z" fill="currentColor"/></svg>STARBOUND</a>
-        <nav class="top-actions" aria-label="Game controls"><button id="help-button" class="text-button">CONTROLS <span class="key">?</span></button><button id="pause-button" class="icon-button" aria-label="Pause flight" title="Pause flight">Ⅱ</button></nav>
+        <a class="brand" href="/" aria-label="Starbound home"
+          ><svg viewBox="0 0 32 32" fill="none" aria-hidden="true">
+            <path d="M16 2 20 12 30 16 20 20 16 30 12 20 2 16 12 12Z" stroke="currentColor" />
+            <path d="m16 9 2 5 5 2-5 2-2 5-2-5-5-2 5-2Z" fill="currentColor" /></svg
+          >STARBOUND</a
+        >
+        <nav class="top-actions" aria-label="Game controls">
+          <button id="help-button" class="text-button">CONTROLS <span class="key">?</span></button
+          ><button
+            id="pause-button"
+            class="icon-button"
+            aria-label="Pause flight"
+            title="Pause flight"
+          >
+            Ⅱ
+          </button>
+        </nav>
       </header>
 
       <aside class="navigation" aria-label="Navigation targets">
         <div class="section-label">NAVIGATION</div>
-        <button class="destination active" data-target="0"><span class="planet-icon ocean"></span><span class="destination-info"><strong>Pelagos</strong><span>OCEAN WORLD</span></span><span class="destination-arrow">↗</span></button>
-        <button class="destination" data-target="1"><span class="planet-icon desert"></span><span class="destination-info"><strong>Cinder</strong><span>DESERT WORLD</span></span><span class="destination-arrow">↗</span></button>
-        <button class="destination" data-target="2"><span class="planet-icon ringed"></span><span class="destination-info"><strong>Aurelia</strong><span>RINGED GIANT</span></span><span class="destination-arrow">↗</span></button>
-        <button class="destination" data-target="3"><span class="planet-icon solar"></span><span class="destination-info"><strong>Solace</strong><span>YELLOW STAR</span></span><span class="destination-arrow">↗</span></button>
-        <div class="target-readout"><span>SELECTED TARGET</span><strong id="target-name">PELAGOS</strong><div><span id="target-distance">—</span><span id="target-status">UNEXPLORED</span></div><button id="jump-button">JUMP TO VICINITY <span>↗</span></button></div>
+        <button class="destination active" data-target="0">
+          <span class="planet-icon ocean"></span
+          ><span class="destination-info"><strong>Pelagos</strong><span>OCEAN WORLD</span></span
+          ><span class="destination-arrow">↗</span>
+        </button>
+        <button class="destination" data-target="1">
+          <span class="planet-icon desert"></span
+          ><span class="destination-info"><strong>Cinder</strong><span>DESERT WORLD</span></span
+          ><span class="destination-arrow">↗</span>
+        </button>
+        <button class="destination" data-target="2">
+          <span class="planet-icon ringed"></span
+          ><span class="destination-info"><strong>Aurelia</strong><span>RINGED GIANT</span></span
+          ><span class="destination-arrow">↗</span>
+        </button>
+        <button class="destination" data-target="3">
+          <span class="planet-icon solar"></span
+          ><span class="destination-info"><strong>Solace</strong><span>YELLOW STAR</span></span
+          ><span class="destination-arrow">↗</span>
+        </button>
+        <div class="target-readout">
+          <span>SELECTED TARGET</span><strong id="target-name">PELAGOS</strong>
+          <div><span id="target-distance">—</span><span id="target-status">UNEXPLORED</span></div>
+          <button id="jump-button">JUMP TO VICINITY <span>↗</span></button>
+        </div>
       </aside>
 
-      <div class="target-marker" id="target-marker" aria-hidden="true"><div class="marker-corners"></div><span id="marker-name">PELAGOS</span></div>
+      <div class="target-marker" id="target-marker" aria-hidden="true">
+        <div class="marker-corners"></div>
+        <span id="marker-name">PELAGOS</span>
+      </div>
       <div class="heading-instrument" aria-label="Ship heading">
         <span class="instrument-label">HDG <strong id="heading">000°</strong></span>
-        <div class="heading-window"><div class="heading-tape" id="heading-tape"><span class="heading-mark"></span><span class="heading-mark"></span><span class="heading-mark"></span><span class="heading-mark"></span><span class="heading-mark"></span><span class="heading-mark"></span><span class="heading-mark"></span><span class="heading-mark"></span><span class="heading-mark"></span></div></div>
+        <div class="heading-window">
+          <div class="heading-tape" id="heading-tape">
+            <span class="heading-mark"></span><span class="heading-mark"></span
+            ><span class="heading-mark"></span><span class="heading-mark"></span
+            ><span class="heading-mark"></span><span class="heading-mark"></span
+            ><span class="heading-mark"></span><span class="heading-mark"></span
+            ><span class="heading-mark"></span>
+          </div>
+        </div>
         <i class="heading-pointer" aria-hidden="true"></i>
       </div>
       <div class="flight-guidance" aria-hidden="true">
-        <div class="attitude-window"><div id="attitude-roll" class="attitude-roll"><div id="pitch-ladder" class="pitch-ladder"><div class="pitch-rung"><span>30</span><i></i><span>30</span></div><div class="pitch-rung"><span>20</span><i></i><span>20</span></div><div class="pitch-rung"><span>10</span><i></i><span>10</span></div><div class="pitch-rung level"><span>0</span><i></i><span>0</span></div><div class="pitch-rung negative"><span>10</span><i></i><span>10</span></div><div class="pitch-rung negative"><span>20</span><i></i><span>20</span></div><div class="pitch-rung negative"><span>30</span><i></i><span>30</span></div></div></div></div>
+        <div class="attitude-window">
+          <div id="attitude-roll" class="attitude-roll">
+            <div id="pitch-ladder" class="pitch-ladder">
+              <div class="pitch-rung"><span>30</span><i></i><span>30</span></div>
+              <div class="pitch-rung"><span>20</span><i></i><span>20</span></div>
+              <div class="pitch-rung"><span>10</span><i></i><span>10</span></div>
+              <div class="pitch-rung level"><span>0</span><i></i><span>0</span></div>
+              <div class="pitch-rung negative"><span>10</span><i></i><span>10</span></div>
+              <div class="pitch-rung negative"><span>20</span><i></i><span>20</span></div>
+              <div class="pitch-rung negative"><span>30</span><i></i><span>30</span></div>
+            </div>
+          </div>
+        </div>
         <div class="reticle"><span></span><i></i><span></span></div>
       </div>
       <section class="velocity-instrument" aria-label="Velocity and engine power">
         <span class="instrument-label">VELOCITY</span>
         <div class="velocity-value"><strong id="speed">00</strong><span>KM/S</span></div>
         <div class="speed-meter"><i id="speed-meter"></i></div>
-        <div class="throttle-readout"><span>THR <strong id="throttle">00%</strong></span><span id="boost-label">CRUISE</span></div>
+        <div class="throttle-readout">
+          <span>THR <strong id="throttle">00%</strong></span
+          ><span id="boost-label">CRUISE</span>
+        </div>
       </section>
       <div class="intro" id="intro">
-        <h1>Explore<br>the <em>stars.</em></h1>
+        <h1>Explore<br />the <em>stars.</em></h1>
         <button id="launch-button" class="primary-button">BEGIN FLIGHT <span>↗</span></button>
         <button id="choose-ship-button" class="secondary-button">CHOOSE SHIP</button>
       </div>
@@ -57,23 +127,145 @@
         <button id="back-from-ships" class="back-button">← BACK</button>
         <h1>Choose your ship.</h1>
         <div class="ship-options" role="group" aria-label="Ship type">
-          <button class="ship-option selected" data-ship="0" aria-pressed="true"><svg viewBox="0 0 60 48" aria-hidden="true"><path d="m30 3 3 19 22-11-4 10-18 7 2 15-5-4-5 4 2-15-18-7-4-10 22 11Z"/></svg><span><strong>Pathfinder</strong><small>Four-wing starfighter</small></span><span class="selection-check" aria-hidden="true">✓</span></button>
-          <button class="ship-option" data-ship="1" aria-pressed="false"><svg viewBox="0 0 60 48" aria-hidden="true"><path d="m30 4 25 37-19-5-6 5-6-5-19 5Z"/><path d="M30 13v23"/></svg><span><strong>Arrow</strong><small>Delta-wing interceptor</small></span><span class="selection-check" aria-hidden="true">✓</span></button>
-          <button class="ship-option" data-ship="2" aria-pressed="false"><svg viewBox="0 0 60 48" aria-hidden="true"><path d="m24 6 12 0 5 8v24H19V14ZM19 25H7v-9h8v25H7V25m34 0h12v-9h-8v25h8V25"/></svg><span><strong>Atlas</strong><small>Twin-engine explorer</small></span><span class="selection-check" aria-hidden="true">✓</span></button>
+          <button class="ship-option selected" data-ship="0" aria-pressed="true">
+            <svg viewBox="0 0 60 48" aria-hidden="true">
+              <path d="m30 3 3 19 22-11-4 10-18 7 2 15-5-4-5 4 2-15-18-7-4-10 22 11Z" /></svg
+            ><span><strong>Pathfinder</strong><small>Four-wing starfighter</small></span
+            ><span class="selection-check" aria-hidden="true">✓</span>
+          </button>
+          <button class="ship-option" data-ship="1" aria-pressed="false">
+            <svg viewBox="0 0 60 48" aria-hidden="true">
+              <path d="m30 4 25 37-19-5-6 5-6-5-19 5Z" />
+              <path d="M30 13v23" /></svg
+            ><span><strong>Arrow</strong><small>Delta-wing interceptor</small></span
+            ><span class="selection-check" aria-hidden="true">✓</span>
+          </button>
+          <button class="ship-option" data-ship="2" aria-pressed="false">
+            <svg viewBox="0 0 60 48" aria-hidden="true">
+              <path d="m24 6 12 0 5 8v24H19V14ZM19 25H7v-9h8v25H7V25m34 0h12v-9h-8v25h8V25" /></svg
+            ><span><strong>Atlas</strong><small>Twin-engine explorer</small></span
+            ><span class="selection-check" aria-hidden="true">✓</span>
+          </button>
         </div>
-        <div class="paint-selection"><div class="paint-label">PAINT <span id="paint-name">Ivory</span></div><div class="paint-options" role="group" aria-label="Paint scheme"><button class="paint-swatch ivory selected" data-paint="0" aria-label="Ivory paint" aria-pressed="true"></button><button class="paint-swatch graphite" data-paint="1" aria-label="Graphite paint" aria-pressed="false"></button><button class="paint-swatch cobalt" data-paint="2" aria-label="Cobalt paint" aria-pressed="false"></button><button class="paint-swatch crimson" data-paint="3" aria-label="Crimson paint" aria-pressed="false"></button></div></div>
-        <button id="confirm-ship-button" class="primary-button">USE THIS SHIP <span>✓</span></button>
+        <div class="paint-selection">
+          <div class="paint-label">PAINT <span id="paint-name">Ivory</span></div>
+          <div class="paint-options" role="group" aria-label="Paint scheme">
+            <button
+              class="paint-swatch ivory selected"
+              data-paint="0"
+              aria-label="Ivory paint"
+              aria-pressed="true"
+            ></button
+            ><button
+              class="paint-swatch graphite"
+              data-paint="1"
+              aria-label="Graphite paint"
+              aria-pressed="false"
+            ></button
+            ><button
+              class="paint-swatch cobalt"
+              data-paint="2"
+              aria-label="Cobalt paint"
+              aria-pressed="false"
+            ></button
+            ><button
+              class="paint-swatch crimson"
+              data-paint="3"
+              aria-label="Crimson paint"
+              aria-pressed="false"
+            ></button>
+          </div>
+        </div>
+        <button id="confirm-ship-button" class="primary-button">
+          USE THIS SHIP <span>✓</span>
+        </button>
       </section>
       <div class="flight-notice" id="flight-notice" role="status"></div>
 
-      <section class="controls-panel" id="controls-panel" aria-label="Flight controls" hidden><div class="section-label">FLIGHT MANUAL<button id="close-help" aria-label="Close controls">×</button></div><h2>You have the helm.</h2><dl><div><dt><kbd>W</kbd><kbd>S</kbd></dt><dd>Pitch up / down</dd></div><div><dt><kbd>A</kbd><kbd>D</kbd></dt><dd>Turn left / right</dd></div><div><dt><kbd>Q</kbd><kbd>E</kbd></dt><dd>Roll left / right</dd></div><div><dt><kbd>SHIFT</kbd></dt><dd>Hold to boost</dd></div><div><dt><kbd>SPACE</kbd></dt><dd>Hold to brake</dd></div><div><dt><kbd>P</kbd> / <kbd>ESC</kbd></dt><dd>Pause flight</dd></div><div><dt><kbd>R</kbd></dt><dd>Return to start</dd></div></dl><p>Fly close to a planet to discover it. Use navigation to jump near another world.</p></section>
-      <div class="pause-overlay" id="pause-overlay" hidden><span class="eyebrow">TAKE YOUR TIME</span><h2>Adrift for a moment.</h2><p>Your universe will be here when you’re ready.</p><button id="resume-button" class="primary-button">RESUME FLIGHT <span>↗</span></button></div>
-      <div class="touch-controls" aria-label="Touch flight controls"><div class="touch-pad"><button data-key="KeyW" aria-label="Pitch up">↑</button><button data-key="KeyA" aria-label="Turn left">←</button><button data-key="KeyS" aria-label="Pitch down">↓</button><button data-key="KeyD" aria-label="Turn right">→</button></div><div class="touch-speed"><button data-key="ShiftLeft">BOOST</button><button data-key="Space">BRAKE</button></div></div>
+      <section class="controls-panel" id="controls-panel" aria-label="Flight controls" hidden>
+        <div class="section-label">
+          FLIGHT MANUAL<button id="close-help" aria-label="Close controls">×</button>
+        </div>
+        <h2>You have the helm.</h2>
+        <dl>
+          <div>
+            <dt><kbd>W</kbd><kbd>S</kbd></dt>
+            <dd>Pitch up / down</dd>
+          </div>
+          <div>
+            <dt><kbd>A</kbd><kbd>D</kbd></dt>
+            <dd>Turn left / right</dd>
+          </div>
+          <div>
+            <dt><kbd>Q</kbd><kbd>E</kbd></dt>
+            <dd>Roll left / right</dd>
+          </div>
+          <div>
+            <dt><kbd>SHIFT</kbd></dt>
+            <dd>Hold to boost</dd>
+          </div>
+          <div>
+            <dt><kbd>SPACE</kbd></dt>
+            <dd>Hold to brake</dd>
+          </div>
+          <div>
+            <dt><kbd>P</kbd> / <kbd>ESC</kbd></dt>
+            <dd>Pause flight</dd>
+          </div>
+          <div>
+            <dt><kbd>R</kbd></dt>
+            <dd>Return to start</dd>
+          </div>
+        </dl>
+        <p>Fly close to a planet to discover it. Use navigation to jump near another world.</p>
+      </section>
+      <div class="pause-overlay" id="pause-overlay" hidden>
+        <span class="eyebrow">TAKE YOUR TIME</span>
+        <h2>Adrift for a moment.</h2>
+        <p>Your universe will be here when you’re ready.</p>
+        <button id="resume-button" class="primary-button">RESUME FLIGHT <span>↗</span></button>
+      </div>
+      <div class="touch-controls" aria-label="Touch flight controls">
+        <div class="touch-pad">
+          <button data-key="KeyW" aria-label="Pitch up">↑</button
+          ><button data-key="KeyA" aria-label="Turn left">←</button
+          ><button data-key="KeyS" aria-label="Pitch down">↓</button
+          ><button data-key="KeyD" aria-label="Turn right">→</button>
+        </div>
+        <div class="touch-speed">
+          <button data-key="ShiftLeft">BOOST</button><button data-key="Space">BRAKE</button>
+        </div>
+      </div>
 
       <footer class="hud">
-        <div class="ship-status"><svg viewBox="0 0 44 44" fill="none" aria-hidden="true"><path d="m22 5 4 15 13-7-3 6-10 6 2 13-6-5-6 5 2-13-10-6-3-6 13 7Z" stroke="currentColor"/></svg><div><div class="ship-identity"><strong id="ship-code">SF–01</strong><span id="ship-name">PATHFINDER</span></div><span class="ship-ready"><i></i><span id="flight-state">SYSTEMS READY</span></span></div></div>
-        <div class="attitude-readout" aria-label="Ship attitude"><div><span>PITCH</span><strong id="pitch">+00°</strong></div><div><span>BANK</span><strong id="bank">00°</strong></div></div>
-        <div class="flight-stats"><div><span class="section-label">TRIP</span><strong><span id="distance">0.0</span><small> KM</small></strong></div><div><span class="section-label">DISCOVERED</span><strong><span id="discovered">00</span><small> / 04</small></strong></div></div>
+        <div class="ship-status">
+          <svg viewBox="0 0 44 44" fill="none" aria-hidden="true">
+            <path
+              d="m22 5 4 15 13-7-3 6-10 6 2 13-6-5-6 5 2-13-10-6-3-6 13 7Z"
+              stroke="currentColor"
+            />
+          </svg>
+          <div>
+            <div class="ship-identity">
+              <strong id="ship-code">SF–01</strong><span id="ship-name">PATHFINDER</span>
+            </div>
+            <span class="ship-ready"><i></i><span id="flight-state">SYSTEMS READY</span></span>
+          </div>
+        </div>
+        <div class="attitude-readout" aria-label="Ship attitude">
+          <div><span>PITCH</span><strong id="pitch">+00°</strong></div>
+          <div><span>BANK</span><strong id="bank">00°</strong></div>
+        </div>
+        <div class="flight-stats">
+          <div>
+            <span class="section-label">TRIP</span
+            ><strong><span id="distance">0.0</span><small> KM</small></strong>
+          </div>
+          <div>
+            <span class="section-label">DISCOVERED</span
+            ><strong><span id="discovered">00</span><small> / 04</small></strong>
+          </div>
+        </div>
       </footer>
       <div id="error" role="alert" hidden></div>
     </div>
