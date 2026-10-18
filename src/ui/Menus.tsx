@@ -1,8 +1,17 @@
 import { useEffect, useRef, useSyncExternalStore } from 'react';
+import type { ReactNode } from 'react';
 import type { Game, Session } from '../game.ts';
 import { paints, shipTypes } from '../ships/catalog.ts';
 
-export function Menus({ game, session }: { game: Game; session: Readonly<Session> }) {
+export function Menus({
+  game,
+  session,
+  themeSelector,
+}: {
+  game: Game;
+  session: Readonly<Session>;
+  themeSelector: ReactNode;
+}) {
   const character = useSyncExternalStore(game.character.subscribe, game.character.getSnapshot);
   const choice = useSyncExternalStore(game.selection.subscribe, game.selection.getSnapshot);
   const ship = shipTypes.find((ship) => ship.id === choice.shipId) ?? shipTypes[0];
@@ -26,6 +35,7 @@ export function Menus({ game, session }: { game: Game; session: Readonly<Session
           STARBOUND
         </a>
         <nav className="top-actions" aria-label="Game controls">
+          {themeSelector}
           <button id="help-button" onClick={game.toggleHelp} className="text-button">
             CONTROLS <span className="key">?</span>
           </button>

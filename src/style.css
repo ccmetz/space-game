@@ -2,13 +2,66 @@
 
 :root {
   font-family: 'IBM Plex Sans', sans-serif;
-  color: #e5e9e6;
-  background: #060a10;
+  color: var(--text);
+  background: var(--background);
   font-synthesis: none;
-  --muted: #8b969f;
-  --accent: #c4dac3;
-  --line: rgba(190, 209, 220, 0.16);
+  color-scheme: dark;
+  --background: #061019;
+  --surface: #102530;
+  --text: #e1f3fa;
+  --muted: #96aebb;
+  --accent: #77e4f2;
+  --secondary: #a8bcff;
+  --button-text: #071c24;
+  --line: color-mix(in srgb, var(--accent) 20%, transparent);
+  --hud: var(--accent);
+  --hud-line: color-mix(in srgb, var(--accent) 30%, transparent);
+  --hud-muted: var(--muted);
 }
+:root[data-theme='nebula'] {
+  --background: #100b1c;
+  --surface: #241933;
+  --text: #f1e7ff;
+  --muted: #b1a0c2;
+  --accent: #c4a0ff;
+  --secondary: #ff9ed2;
+  --button-text: #211232;
+}
+:root[data-theme='solar'] {
+  --background: #140f09;
+  --surface: #292218;
+  --text: #fff0d9;
+  --muted: #bcb09b;
+  --accent: #ffc477;
+  --secondary: #7dd9c8;
+  --button-text: #2a1b09;
+}
+.theme-selector {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--muted);
+  font-size: 9px;
+  letter-spacing: 1.5px;
+}
+.theme-selector select {
+  min-width: 0;
+  max-width: 210px;
+  padding: 9px 10px;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  background: var(--surface);
+  color: var(--accent);
+  font:
+    12px 'Chakra Petch',
+    sans-serif;
+  cursor: pointer;
+}
+.theme-selector select:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
 * {
   box-sizing: border-box;
 }
@@ -59,18 +112,18 @@ button:disabled {
   inset: 0;
   pointer-events: none;
   background:
-    linear-gradient(90deg, rgba(4, 8, 14, 0.83), transparent 55%),
+    linear-gradient(90deg, color-mix(in srgb, var(--background) 83%, transparent), transparent 55%),
     linear-gradient(
       0deg,
-      rgba(4, 8, 14, 0.82),
+      color-mix(in srgb, var(--background) 82%, transparent),
       transparent 28%,
       transparent 80%,
-      rgba(4, 8, 14, 0.5)
+      color-mix(in srgb, var(--background) 50%, transparent)
     );
   box-shadow: inset 0 0 160px rgba(0, 0, 0, 0.2);
 }
 .topbar {
-  background: #060a1080;
+  background: color-mix(in srgb, var(--background) 50.2%, transparent);
   backdrop-filter: blur(8px);
   position: absolute;
   top: 0;
@@ -122,7 +175,7 @@ button:disabled {
   height: 5px;
   background: var(--accent);
   border-radius: 50%;
-  box-shadow: 0 0 10px #b8dcc578;
+  box-shadow: 0 0 10px color-mix(in srgb, var(--accent) 47.06%, transparent);
   display: inline-block;
 }
 .sector-line {
@@ -141,7 +194,7 @@ button:disabled {
   background: none;
   letter-spacing: 1.6px;
   font-size: 10px;
-  color: #b9c3c9;
+  color: var(--text);
   display: flex;
   align-items: center;
   gap: 12px;
@@ -151,7 +204,7 @@ kbd {
   display: inline-flex;
   justify-content: center;
   align-items: center;
-  border: 1px solid #6c7b825c;
+  border: 1px solid color-mix(in srgb, var(--muted) 36.08%, transparent);
   border-radius: 3px;
   min-width: 22px;
   height: 22px;
@@ -159,7 +212,7 @@ kbd {
     10px 'IBM Plex Sans',
     sans-serif;
   padding: 0 5px;
-  color: #c5ced1;
+  color: var(--text);
 }
 .icon-button {
   background: none;
@@ -188,7 +241,7 @@ kbd {
 }
 .tiny-cross {
   font-size: 16px;
-  color: #879394;
+  color: var(--muted);
 }
 h2 {
   font:
@@ -219,11 +272,15 @@ h2 {
     border-color 0.2s;
 }
 .destination:hover {
-  background: #d9efe90a;
+  background: color-mix(in srgb, var(--accent) 3.92%, transparent);
 }
 .destination.active {
-  background: linear-gradient(90deg, #b0d3bc12, #a3c6c508);
-  border-color: #bdddc52b;
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--accent) 7.06%, transparent),
+    color-mix(in srgb, var(--secondary) 3.14%, transparent)
+  );
+  border-color: color-mix(in srgb, var(--accent) 16.86%, transparent);
 }
 .planet-icon {
   display: block;
@@ -276,7 +333,7 @@ h2 {
 }
 .destination-arrow {
   font-size: 16px;
-  color: #98a69e;
+  color: var(--secondary);
   margin-left: auto;
 }
 .target-readout {
@@ -300,7 +357,7 @@ h2 {
   justify-content: space-between;
   font-size: 9px;
   margin-top: 10px;
-  color: #a8b4ba;
+  color: var(--muted);
 }
 .target-readout > div > span:last-child {
   font-size: 8px;
@@ -353,7 +410,7 @@ h1 em {
 .primary-button {
   border-radius: 3px;
   background: var(--accent);
-  color: #15251e;
+  color: var(--button-text);
   font-weight: 600;
   font-size: 10px;
   letter-spacing: 1.7px;
@@ -368,7 +425,7 @@ h1 em {
     transform 0.2s;
 }
 .primary-button:hover {
-  background: #e0eedb;
+  background: color-mix(in srgb, var(--accent) 80%, white);
   transform: translateY(-2px);
 }
 .primary-button span {
@@ -382,13 +439,13 @@ h1 em {
 }
 .flying .vignette {
   background:
-    linear-gradient(90deg, rgba(4, 8, 14, 0.65), transparent 32%),
+    linear-gradient(90deg, color-mix(in srgb, var(--background) 65%, transparent), transparent 32%),
     linear-gradient(
       0deg,
-      rgba(4, 8, 14, 0.8),
+      color-mix(in srgb, var(--background) 80%, transparent),
       transparent 25%,
       transparent 80%,
-      rgba(4, 8, 14, 0.4)
+      color-mix(in srgb, var(--background) 40%, transparent)
     );
 }
 .target-marker {
@@ -405,14 +462,14 @@ h1 em {
   width: 32px;
   height: 32px;
   background:
-    linear-gradient(#b5d2d0, #b5d2d0) 0 0/7px 1px,
-    linear-gradient(#b5d2d0, #b5d2d0) 0 0/1px 7px,
-    linear-gradient(#b5d2d0, #b5d2d0) 100% 0/7px 1px,
-    linear-gradient(#b5d2d0, #b5d2d0) 100% 0/1px 7px,
-    linear-gradient(#b5d2d0, #b5d2d0) 0 100%/7px 1px,
-    linear-gradient(#b5d2d0, #b5d2d0) 0 100%/1px 7px,
-    linear-gradient(#b5d2d0, #b5d2d0) 100% 100%/7px 1px,
-    linear-gradient(#b5d2d0, #b5d2d0) 100% 100%/1px 7px;
+    linear-gradient(var(--accent), var(--accent)) 0 0/7px 1px,
+    linear-gradient(var(--accent), var(--accent)) 0 0/1px 7px,
+    linear-gradient(var(--accent), var(--accent)) 100% 0/7px 1px,
+    linear-gradient(var(--accent), var(--accent)) 100% 0/1px 7px,
+    linear-gradient(var(--accent), var(--accent)) 0 100%/7px 1px,
+    linear-gradient(var(--accent), var(--accent)) 0 100%/1px 7px,
+    linear-gradient(var(--accent), var(--accent)) 100% 100%/7px 1px,
+    linear-gradient(var(--accent), var(--accent)) 100% 100%/1px 7px;
   background-repeat: no-repeat;
 }
 .target-marker > span {
@@ -432,12 +489,12 @@ h1 em {
 .reticle span {
   width: 12px;
   height: 1px;
-  background: #cae1d9;
+  background: var(--accent);
 }
 .reticle i {
   width: 3px;
   height: 3px;
-  border: 1px solid #cae1d9;
+  border: 1px solid var(--accent);
   border-radius: 50%;
 }
 .hud {
@@ -452,7 +509,11 @@ h1 em {
   justify-content: space-between;
   gap: 30px;
   padding: 20px 42px;
-  background: linear-gradient(0deg, #080d1580, transparent);
+  background: linear-gradient(
+    0deg,
+    color-mix(in srgb, var(--background) 50.2%, transparent),
+    transparent
+  );
 }
 .ship-status {
   display: flex;
@@ -463,7 +524,7 @@ h1 em {
 .ship-status > svg {
   width: 42px;
   height: 42px;
-  color: #b8c6c6;
+  color: var(--secondary);
 }
 .ship-status > div {
   display: flex;
@@ -520,7 +581,7 @@ h1 em {
 .speed-meter {
   margin-top: 7px;
   height: 2px;
-  background: #a9c0c51c;
+  background: color-mix(in srgb, var(--secondary) 10.98%, transparent);
 }
 .speed-meter i {
   display: block;
@@ -577,8 +638,8 @@ h1 em {
   transition:
     opacity 0.4s,
     transform 0.4s;
-  background: #0d1924d9;
-  border: 1px solid #afcbba26;
+  background: color-mix(in srgb, var(--surface) 85.1%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 14.9%, transparent);
   border-radius: 4px;
   padding: 13px 22px;
   font-size: 11px;
@@ -595,7 +656,7 @@ h1 em {
   right: 42px;
   width: 310px;
   padding: 25px;
-  background: #0b141ff2;
+  background: color-mix(in srgb, var(--surface) 94.9%, transparent);
   border: 1px solid var(--line);
   border-radius: 5px;
   backdrop-filter: blur(16px);
@@ -627,7 +688,7 @@ h1 em {
 }
 .controls-panel dd {
   font-size: 11px;
-  color: #a9b6bf;
+  color: var(--muted);
 }
 .controls-panel p {
   font-size: 11px;
@@ -640,7 +701,7 @@ h1 em {
 .pause-overlay {
   position: absolute;
   inset: 104px 0 118px;
-  background: #060c16a8;
+  background: color-mix(in srgb, var(--background) 65.88%, transparent);
   backdrop-filter: blur(8px);
   z-index: 2;
   display: flex;
@@ -664,7 +725,7 @@ h1 em {
   position: absolute;
   inset: 25%;
   padding: 30px;
-  background: #0c1525;
+  background: var(--surface);
   z-index: 10;
   line-height: 1.8;
   border: 1px solid var(--line);
@@ -963,13 +1024,13 @@ h1 em {
   }
   .touch-controls button {
     border: 1px solid var(--line);
-    background: #101b2ab0;
+    background: color-mix(in srgb, var(--surface) 69.02%, transparent);
     border-radius: 4px;
     touch-action: none;
     user-select: none;
   }
   .touch-controls button:active {
-    background: #a4c2b14d;
+    background: color-mix(in srgb, var(--accent) 30.2%, transparent);
   }
   .touch-speed {
     display: flex;
@@ -984,11 +1045,19 @@ h1 em {
   }
   .vignette {
     background:
-      linear-gradient(0deg, #060a10ce, transparent 65%),
-      linear-gradient(90deg, #060a1055, transparent);
+      linear-gradient(
+        0deg,
+        color-mix(in srgb, var(--background) 80.78%, transparent),
+        transparent 65%
+      ),
+      linear-gradient(90deg, color-mix(in srgb, var(--background) 33.33%, transparent), transparent);
   }
   .flying .vignette {
-    background: linear-gradient(0deg, #060a10b0, transparent 50%);
+    background: linear-gradient(
+      0deg,
+      color-mix(in srgb, var(--background) 69.02%, transparent),
+      transparent 50%
+    );
   }
   .flying .touch-controls {
     display: flex;
@@ -1045,20 +1114,18 @@ h1 em {
   backdrop-filter: none;
 }
 #app:not(.flying) .text-button {
-  background: #060a1099;
+  background: color-mix(in srgb, var(--background) 60%, transparent);
   border-radius: 4px;
   padding: 10px 12px;
 }
 
 /* A few thin instruments sit around the view, like a fighter's projected HUD. */
-.flying {
-  --hud: #b3dbc3;
-  --hud-line: #b3dbc34d;
-  --hud-muted: #89aa97;
-}
 .flying .topbar {
   height: 76px;
-  background: linear-gradient(#060a1080, transparent);
+  background: linear-gradient(
+    color-mix(in srgb, var(--background) 50.2%, transparent),
+    transparent
+  );
   border: 0;
   backdrop-filter: none;
 }
@@ -1075,7 +1142,7 @@ h1 em {
   width: 210px;
   padding: 18px 15px;
   color: var(--hud);
-  background: #07120f70;
+  background: color-mix(in srgb, var(--surface) 43.92%, transparent);
   border-left: 1px solid var(--hud-line);
   font-family: 'Chakra Petch', monospace;
 }
@@ -1089,7 +1156,7 @@ h1 em {
 }
 .flying .destination.active {
   border-color: var(--hud-line);
-  background: #b3dbc30a;
+  background: color-mix(in srgb, var(--accent) 3.92%, transparent);
 }
 .flying .destination-info > span,
 .flying .destination-arrow {
@@ -1253,7 +1320,7 @@ h1 em {
   right: 42px;
   width: 154px;
   padding: 14px 15px;
-  background: #07120f85;
+  background: color-mix(in srgb, var(--surface) 52.16%, transparent);
   border-right: 1px solid var(--hud-line);
   color: var(--hud);
   font-family: 'Chakra Petch', monospace;
@@ -1277,7 +1344,11 @@ h1 em {
 }
 .velocity-instrument .speed-meter {
   height: 10px;
-  background: repeating-linear-gradient(90deg, #b3dbc312 0 5px, transparent 5px 8px);
+  background: repeating-linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--accent) 7.06%, transparent) 0 5px,
+    transparent 5px 8px
+  );
 }
 .velocity-instrument .speed-meter i {
   background: repeating-linear-gradient(90deg, var(--hud) 0 5px, transparent 5px 8px);
@@ -1305,7 +1376,11 @@ h1 em {
   right: 42px;
   min-height: 76px;
   padding: 16px 22px;
-  background: linear-gradient(0deg, #07120fb0, #07120f35);
+  background: linear-gradient(
+    0deg,
+    color-mix(in srgb, var(--surface) 69.02%, transparent),
+    color-mix(in srgb, var(--surface) 20.78%, transparent)
+  );
   border: 1px solid var(--hud-line);
   clip-path: polygon(
     12px 0,
@@ -1422,7 +1497,7 @@ h1 em {
     right: 20px;
     transform: none;
     width: 120px;
-    background: #07120f85;
+    background: color-mix(in srgb, var(--surface) 52.16%, transparent);
     padding: 9px;
   }
   .heading-window {
@@ -1551,7 +1626,7 @@ h1 em {
   padding: 13px 20px;
   border: 1px solid var(--line);
   border-radius: 3px;
-  background: #060a1080;
+  background: color-mix(in srgb, var(--background) 50.2%, transparent);
   font-size: 9px;
   letter-spacing: 1.7px;
   text-align: center;
@@ -1560,7 +1635,12 @@ h1 em {
   border-color: var(--accent);
 }
 .choosing-ship .vignette {
-  background: linear-gradient(90deg, #060a10f0 0%, #060a10c0 35%, #060a1020 70%);
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--background) 94.12%, transparent) 0%,
+    color-mix(in srgb, var(--background) 75.29%, transparent) 35%,
+    color-mix(in srgb, var(--background) 12.55%, transparent) 70%
+  );
 }
 .ship-selection {
   position: absolute;
@@ -1570,7 +1650,7 @@ h1 em {
   width: 340px;
   overflow-y: auto;
   scrollbar-width: thin;
-  scrollbar-color: #afc8b33d transparent;
+  scrollbar-color: color-mix(in srgb, var(--accent) 23.92%, transparent) transparent;
 }
 .back-button {
   padding: 8px 0;
@@ -1601,14 +1681,14 @@ h1 em {
   border: 1px solid var(--line);
   border-radius: 4px;
   text-align: left;
-  background: #0b131c90;
+  background: color-mix(in srgb, var(--surface) 56.47%, transparent);
 }
 .ship-option:hover {
-  background: #b3dbc30a;
+  background: color-mix(in srgb, var(--accent) 3.92%, transparent);
 }
 .ship-option.selected {
-  border-color: #c4dac36b;
-  background: #c4dac310;
+  border-color: color-mix(in srgb, var(--accent) 41.96%, transparent);
+  background: color-mix(in srgb, var(--accent) 6.27%, transparent);
 }
 .ship-option > svg {
   width: 44px;
@@ -1617,7 +1697,7 @@ h1 em {
   fill: none;
   stroke: currentColor;
   stroke-width: 1;
-  color: #b7c9c1;
+  color: var(--secondary);
 }
 .ship-option > span:nth-child(2) {
   display: flex;
@@ -1653,7 +1733,7 @@ h1 em {
   color: var(--muted);
 }
 .paint-label span {
-  color: #d7e1d9;
+  color: var(--text);
   font-size: 11px;
   letter-spacing: 0;
 }
@@ -1718,7 +1798,12 @@ h1 em {
     display: none;
   }
   .choosing-ship .vignette {
-    background: linear-gradient(0deg, #060a10 0%, #060a10e8 40%, #060a1040 65%);
+    background: linear-gradient(
+      0deg,
+      var(--background) 0%,
+      color-mix(in srgb, var(--background) 90.98%, transparent) 40%,
+      color-mix(in srgb, var(--background) 25.1%, transparent) 65%
+    );
   }
   .ship-selection {
     inset: 80px 20px 20px;
@@ -1781,7 +1866,13 @@ h1 em {
   height: 100dvh;
   overflow-y: auto;
   padding: 0 clamp(22px, 5vw, 90px) 28px;
-  background: radial-gradient(ellipse at 20% 55%, #19323960, transparent 55%), #090f16;
+  background:
+    radial-gradient(
+      ellipse at 20% 55%,
+      color-mix(in srgb, var(--secondary) 37.65%, transparent),
+      transparent 55%
+    ),
+    var(--background);
 }
 .registration-header {
   display: flex;
@@ -1791,7 +1882,7 @@ h1 em {
   min-height: 88px;
   border-bottom: 1px solid var(--line);
 }
-.registration-header > span:last-child {
+.registration-header > .registry-location {
   font-size: 9px;
   letter-spacing: 2px;
   color: var(--muted);
@@ -1829,7 +1920,11 @@ h1 em {
   flex-direction: column;
   justify-content: space-between;
   border: 1px solid var(--line);
-  background: linear-gradient(145deg, #18343a40, #0b131b);
+  background: linear-gradient(
+    145deg,
+    color-mix(in srgb, var(--secondary) 25.1%, transparent),
+    var(--surface)
+  );
   min-width: 0;
 }
 
@@ -1873,8 +1968,8 @@ h1 em {
   font-size: 14px;
   color: inherit;
   width: 100%;
-  border: 1px solid #889b9f55;
-  background: #121d26;
+  border: 1px solid color-mix(in srgb, var(--muted) 33.33%, transparent);
+  background: var(--surface);
   border-radius: 3px;
   padding: 13px;
 }
@@ -1919,14 +2014,14 @@ h1 em {
 .hair-options button {
   flex: 1;
   padding: 10px 8px;
-  background: #121d26;
+  background: var(--surface);
   border: 1px solid var(--line);
   border-radius: 3px;
   font-size: 12px;
 }
 .hair-options button[aria-pressed='true'] {
   border-color: var(--accent);
-  background: #c4dac315;
+  background: color-mix(in srgb, var(--accent) 8.24%, transparent);
 }
 
 .class-options {
@@ -1941,16 +2036,16 @@ h1 em {
   padding: 18px 16px;
   border: 1px solid var(--line);
   border-radius: 3px;
-  background: #121d2660;
+  background: color-mix(in srgb, var(--surface) 37.65%, transparent);
   text-align: left;
 }
 .class-option:hover,
 .hair-options button:hover {
-  background: #c4dac310;
+  background: color-mix(in srgb, var(--accent) 6.27%, transparent);
 }
 .class-option[aria-pressed='true'] {
-  background: #c4dac310;
-  border-color: #c4dac390;
+  background: color-mix(in srgb, var(--accent) 6.27%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 56.47%, transparent);
 }
 .class-symbol {
   color: var(--accent);
@@ -1973,7 +2068,7 @@ h1 em {
   min-height: 126px;
   font-size: 12px;
   line-height: 1.8;
-  color: #b3bfc5;
+  color: var(--muted);
   padding-top: 8px;
 }
 .class-description > span {
@@ -2016,7 +2111,7 @@ h1 em {
   .registration-header {
     min-height: 75px;
   }
-  .registration-header > span:last-child {
+  .registration-header > .registry-location {
     max-width: 120px;
     text-align: right;
     font-size: 8px;
@@ -2090,7 +2185,7 @@ h1 em {
 }
 .class-stats .selected-stat {
   color: var(--accent);
-  background: #c4dac30a;
+  background: color-mix(in srgb, var(--accent) 3.92%, transparent);
 }
 @media (max-width: 900px) {
   .class-layout {
@@ -2117,5 +2212,46 @@ h1 em {
   .class-stats th,
   .class-stats td {
     padding: 16px 5px;
+  }
+}
+
+@media (max-width: 760px) {
+  .theme-selector > span {
+    display: none;
+  }
+  .theme-selector select {
+    width: 105px;
+    font-size: 11px;
+  }
+  .top-actions {
+    gap: 10px;
+  }
+  .registration-header {
+    flex-wrap: wrap;
+    padding: 14px 0;
+    gap: 12px;
+  }
+  .registration-header > .registry-location {
+    display: none;
+  }
+}
+@media (max-width: 480px) {
+  .topbar {
+    padding-inline: 12px;
+  }
+  .topbar .brand {
+    font-size: 11px;
+    letter-spacing: 1.5px;
+    gap: 6px;
+  }
+  .topbar .brand svg {
+    width: 20px;
+    height: 20px;
+  }
+  .topbar .theme-selector select {
+    width: 92px;
+  }
+  .top-actions {
+    gap: 8px;
   }
 }

@@ -76,6 +76,8 @@ removes listeners when views unmount. Separate telemetry subscriptions let the H
 update without rerendering the menus at the same rate.
 
 Use React-local state for view-only details such as a selected tab or search text.
+`App.tsx` owns the interface theme preference, saves it in browser storage, and
+applies it to the root element so menus and flight instruments share one palette.
 Inventory contents, quest progress, and other gameplay data should belong to their
 game modules and be exposed through snapshots and actions as those systems arrive.
 

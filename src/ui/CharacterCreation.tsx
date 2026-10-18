@@ -1,8 +1,15 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import type { ReactNode } from 'react';
 import type { Game } from '../game.ts';
 import { classes, hairColors, hairStyles, skinTones, suitColors } from '../character/character.ts';
 
-export function CharacterCreation({ game }: { game: Game }) {
+export function CharacterCreation({
+  game,
+  themeSelector,
+}: {
+  game: Game;
+  themeSelector: ReactNode;
+}) {
   const [step, setStep] = useState<'appearance' | 'class'>('appearance');
   const headingRef = useRef<HTMLHeadingElement>(null);
   const screenRef = useRef<HTMLElement>(null);
@@ -20,7 +27,8 @@ export function CharacterCreation({ game }: { game: Game }) {
     <main className="character-creation" ref={screenRef}>
       <header className="registration-header">
         <span className="brand">✧ STARBOUND</span>
-        <span>KEPLER STATION / CREW REGISTRY</span>
+        <span className="registry-location">KEPLER STATION / CREW REGISTRY</span>
+        {themeSelector}
       </header>
       <form
         onSubmit={(event) => {
