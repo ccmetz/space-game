@@ -4,34 +4,36 @@ Starbound is a browser game built with TypeScript, Three.js, React, and Vite.
 Three.js renders the world and runs alongside the gameplay modules. React renders
 the interface and subscribes to state owned by the game.
 
-The current game supports character creation, free flight, ship selection, navigation jumps, and world
+The current game supports character creation, station exploration, free flight, ship selection, navigation jumps, and world
 discovery. Landing, planet exploration, resource gathering, quests, and progression
 are planned features. The structure below describes the current implementation
 and the conventions to follow as those features are added.
 
 ## Module ownership
 
-| Location                     | Responsibility                                                                                                 |
-| ---------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| `src/main.tsx`               | Creates the game controller and mounts React in Strict Mode.                                                   |
-| `src/game.ts`                | Connects the modules, owns session state and game actions, and coordinates the frame loop and runtime cleanup. |
-| `src/character/character.ts` | Owns character appearance and class catalogs, registration state, validation, and local storage.               |
-| `src/state.ts`               | Provides cached snapshots, change notifications, and subscription cleanup without importing React.             |
-| `src/ships/catalog.ts`       | Defines ship identities and paint schemes with stable IDs.                                                     |
-| `src/ships/ship.ts`          | Builds ship models and owns shared materials, paint changes, model banking, and engine effects.                |
-| `src/ships/selection.ts`     | Owns draft and confirmed ship choices and browser storage.                                                     |
-| `src/worlds/catalog.ts`      | Defines world identities, navigation descriptions, positions, sizes, and appearance settings.                  |
-| `src/worlds/worlds.ts`       | Builds the world layout, tracks discovery, checks proximity, and animates planets.                             |
-| `src/worlds/planets.ts`      | Builds planet surfaces, shaders, atmospheres, and rings.                                                       |
-| `src/flight/flight.ts`       | Owns speed, orientation, steering, trip distance, reset, jump, and surface-stop behavior.                      |
-| `src/flight/input.ts`        | Reads keyboard input, accepts touch-control presses and releases, and handles focus loss.                      |
-| `src/flight/camera.ts`       | Positions the follow camera and the ship-preview camera.                                                       |
-| `src/flight/telemetry.ts`    | Reads simulation values into the snapshot displayed by the HUD.                                                |
-| `src/graphics/renderer.ts`   | Sets up the scene, renderer, lights, postprocessing, resizing, and graphics cleanup.                           |
-| `src/graphics/sky.ts`        | Builds the seeded starfield and nebula and makes them follow the player.                                       |
-| `src/graphics/glow.ts`       | Creates the glow texture shared by the sky, star, and ship engines.                                            |
-| `src/ui/`                    | Contains React views, event handlers, focus management, and the root-element lookup helper.                    |
-| `src/style.css`              | Styles the interface and its responsive layouts.                                                               |
+| Location                     | Responsibility                                                                                                     |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `src/main.tsx`               | Creates the game controller and mounts React in Strict Mode.                                                       |
+| `src/game.ts`                | Connects the modules, owns session state and game actions, and coordinates the frame loop and runtime cleanup.     |
+| `src/station/station.ts`     | Owns station layout, collision, walking input, crew dialogue, room state, rendering, and cleanup.                  |
+| `src/character/model.ts`     | Builds the shared character model, hairstyles, facial features, and animation limbs for registration and gameplay. |
+| `src/character/character.ts` | Owns character appearance and class catalogs, registration state, validation, and local storage.                   |
+| `src/state.ts`               | Provides cached snapshots, change notifications, and subscription cleanup without importing React.                 |
+| `src/ships/catalog.ts`       | Defines ship identities and paint schemes with stable IDs.                                                         |
+| `src/ships/ship.ts`          | Builds ship models and owns shared materials, paint changes, model banking, and engine effects.                    |
+| `src/ships/selection.ts`     | Owns draft and confirmed ship choices and browser storage.                                                         |
+| `src/worlds/catalog.ts`      | Defines world identities, navigation descriptions, positions, sizes, and appearance settings.                      |
+| `src/worlds/worlds.ts`       | Builds the world layout, tracks discovery, checks proximity, and animates planets.                                 |
+| `src/worlds/planets.ts`      | Builds planet surfaces, shaders, atmospheres, and rings.                                                           |
+| `src/flight/flight.ts`       | Owns speed, orientation, steering, trip distance, reset, jump, and surface-stop behavior.                          |
+| `src/flight/input.ts`        | Reads keyboard input, accepts touch-control presses and releases, and handles focus loss.                          |
+| `src/flight/camera.ts`       | Positions the follow camera and the ship-preview camera.                                                           |
+| `src/flight/telemetry.ts`    | Reads simulation values into the snapshot displayed by the HUD.                                                    |
+| `src/graphics/renderer.ts`   | Sets up the scene, renderer, lights, postprocessing, resizing, and graphics cleanup.                               |
+| `src/graphics/sky.ts`        | Builds the seeded starfield and nebula and makes them follow the player.                                           |
+| `src/graphics/glow.ts`       | Creates the glow texture shared by the sky, star, and ship engines.                                                |
+| `src/ui/`                    | Contains React views, event handlers, focus management, and the root-element lookup helper.                        |
+| `src/style.css`              | Styles the interface and its responsive layouts.                                                                   |
 
 Keep behavior and its state together. For example, changing a ship's paint goes
 through the ship module, which updates the shared materials and engine effects.
@@ -53,10 +55,11 @@ Keyboard / React controls → game actions → owning game module
 React views ← useSyncExternalStore ← snapshot and notification
 ```
 
-There are four separate subscriptions:
+There are separate subscriptions:
 
+- **Location and station:** the controller owns the station/flight scene choice; the station owns the current room, pause state, nearby crew, and dialogue.
 - **Character:** name, appearance, class, registration confirmation, and storage status.
-  The character module owns this data; React renders a live SVG portrait. Class
+  The character module owns this data; React renders a rotatable 3D preview of the same model used in the station. Class
   specialties are narrative choices for now, without gameplay modifiers.
 
 - **Session:** readiness, flight and pause state, ship-preview state, help,
@@ -88,7 +91,19 @@ reset when the runtime restarts or the page reloads.
 ## Rendering and lifecycle
 
 `App.tsx` shows character registration first, prefilled with the last saved character.
-Confirming registration mounts its `FlightApp`, which owns the canvas element.
+Confirming registration mounts `Station`, which owns its canvas and starts the player in their quarters.
+The station has an enclosed circular promenade with four radial passages leading to furnished rooms.
+Its floor footprint and furniture bounds control collision; crew and objects offer nearby interactions.
+A bunk, welcome terminal, navigation table, dispenser, and shuttle boarding point are usable.
+Keyboard and touch movement follow camera direction. Dragging the canvas or using Q/R rotates the camera.
+Interacting with the nearby shuttle boarding point switches to `FlightApp` and the existing ship selection/flight flow.
+The flight introduction can return to the station. Each scene unmount cleans up its own runtime.
+Station position and conversations reset when leaving the scene or reloading.
+The station uses a third-person orbit camera with raycast obstruction checks against walls, ceilings, and furniture.
+Its frame loop animates walking and crew, checks interaction reach, and publishes map/room snapshots ten times a second.
+Station labels own canvas textures, which are disposed alongside input listeners and graphics on cleanup.
+Character registration renders its shared character model on demand when appearance, rotation, or size changes.
+Its preview owns and disposes its renderer, resize observer, model resources, and pointer listeners.
 Returning to character editing unmounts flight and cleans up its runtime.
 Character choices persist only on confirmation; blocked storage keeps them usable
 for the current session and displays a warning in the flight menu.

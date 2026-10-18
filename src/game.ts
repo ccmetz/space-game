@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { createStation } from './station/station.ts';
 import { createCharacter } from './character/character.ts';
 import { createCameraController } from './flight/camera.ts';
 import { createFlight } from './flight/flight.ts';
@@ -52,6 +53,8 @@ const initialSession: Session = {
 };
 
 export function createGame() {
+  const location = createStore<{ scene: 'station' | 'flight' }>({ scene: 'station' });
+  const station = createStation(() => location.update({ scene: 'flight' }));
   const session = createStore(initialSession);
   const telemetry = createStore(initialTelemetry);
   const selection = createShipSelection();
@@ -297,6 +300,13 @@ export function createGame() {
   }
 
   return {
+    station,
+    location: { getSnapshot: location.getSnapshot, subscribe: location.subscribe },
+    boardShip: () => {
+      if (station.getSnapshot().canBoard && !station.getSnapshot().paused)
+        location.update({ scene: 'flight' });
+    },
+    returnToStation: () => location.update({ scene: 'station' }),
     session: { getSnapshot: session.getSnapshot, subscribe: session.subscribe },
     telemetry: { getSnapshot: telemetry.getSnapshot, subscribe: telemetry.subscribe },
     selection,

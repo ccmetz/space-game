@@ -80,7 +80,16 @@ export function Menus({
         >
           CHOOSE SHIP
         </button>
-        <button className="secondary-button" onClick={game.character.edit}>
+        <button className="secondary-button" onClick={game.returnToStation}>
+          RETURN TO STATION
+        </button>
+        <button
+          className="secondary-button"
+          onClick={() => {
+            game.returnToStation();
+            game.character.edit();
+          }}
+        >
           EDIT CHARACTER
         </button>
       </div>

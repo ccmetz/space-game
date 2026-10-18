@@ -5,6 +5,7 @@ import { CharacterCreation } from './CharacterCreation.tsx';
 import { Hud } from './Hud.tsx';
 import { Menus } from './Menus.tsx';
 import { ShipSelection } from './ShipSelection.tsx';
+import { Station } from './Station.tsx';
 import { TouchControls } from './TouchControls.tsx';
 
 const themes = [
@@ -51,10 +52,12 @@ export function App({ game }: { game: Game }) {
     </label>
   );
   const character = useSyncExternalStore(game.character.subscribe, game.character.getSnapshot);
-  return character.confirmed ? (
-    <FlightApp game={game} themeSelector={themeSelector} />
+  const location = useSyncExternalStore(game.location.subscribe, game.location.getSnapshot);
+  if (!character.confirmed) return <CharacterCreation game={game} themeSelector={themeSelector} />;
+  return location.scene === 'station' ? (
+    <Station game={game} themeSelector={themeSelector} />
   ) : (
-    <CharacterCreation game={game} themeSelector={themeSelector} />
+    <FlightApp game={game} themeSelector={themeSelector} />
   );
 }
 

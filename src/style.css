@@ -2255,3 +2255,254 @@ h1 em {
     gap: 8px;
   }
 }
+
+.station-app {
+  position: fixed;
+  inset: 0;
+}
+.station-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.station-header {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  padding: 24px 32px;
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  background: linear-gradient(#061019e8, transparent);
+  pointer-events: none;
+}
+.station-header h1 {
+  font:
+    500 28px 'Chakra Petch',
+    sans-serif;
+  margin: 8px 0;
+}
+.station-header p,
+.station-map p {
+  color: var(--muted);
+  font-size: 12px;
+}
+.station-actions {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  pointer-events: auto;
+}
+.station-app button {
+  padding: 12px 18px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  border-radius: 4px;
+}
+.station-map {
+  position: absolute;
+  top: 150px;
+  left: 24px;
+  padding: 16px;
+  width: 250px;
+  background: #081622db;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+.station-map-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  margin-top: 12px;
+}
+.station-map-grid > div {
+  padding: 12px 8px;
+  min-height: 65px;
+  border: 1px solid var(--line);
+  font-size: 12px;
+  color: var(--muted);
+}
+.station-map-grid [aria-current] {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: #254353;
+}
+.station-map-grid small {
+  display: block;
+  font-size: 8px;
+  margin-top: 8px;
+}
+.station-status {
+  position: absolute;
+  bottom: 24px;
+  left: 24px;
+  max-width: min(560px, calc(100% - 220px));
+  background: #081622e8;
+  padding: 12px 20px;
+  border-left: 2px solid var(--accent);
+  border-radius: 4px;
+}
+.station-status p {
+  margin: 8px 0;
+}
+.station-status button {
+  margin: 6px 8px 6px 0;
+}
+.station-hint {
+  color: var(--muted);
+  font-size: 12px;
+}
+.station-dialogue {
+  font-size: 14px;
+  line-height: 1.5;
+}
+.station-walk {
+  position: absolute;
+  bottom: 24px;
+  right: 24px;
+  display: grid;
+  grid-template-columns: repeat(3, 48px);
+  gap: 5px;
+  touch-action: none;
+}
+.station-walk button {
+  padding: 14px;
+}
+.station-walk button:first-child {
+  grid-column: 2;
+}
+.station-walk button:nth-child(2) {
+  grid-column: 1;
+}
+.station-pause {
+  position: absolute;
+  inset: 0;
+  background: #061019e8;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 20px;
+}
+@media (max-width: 700px) {
+  .station-header {
+    padding: 16px;
+  }
+  .station-header h1 {
+    font-size: 22px;
+  }
+  .station-actions .theme-selector {
+    display: none;
+  }
+  .station-map {
+    top: 125px;
+    left: 12px;
+    width: 165px;
+    padding: 10px;
+  }
+  .station-map p {
+    display: none;
+  }
+  .station-map-grid > div {
+    padding: 6px;
+    min-height: 50px;
+    font-size: 10px;
+  }
+  .station-status {
+    bottom: 14px;
+    left: 12px;
+    padding: 8px 12px;
+    max-width: calc(100% - 178px);
+    font-size: 12px;
+    max-height: 32vh;
+    overflow-y: auto;
+  }
+  .station-walk {
+    right: 12px;
+    bottom: 14px;
+  }
+}
+
+/* Keep the station HUD out of the character's path and leave the 3D view in focus. */
+.station-canvas {
+  touch-action: none;
+  cursor: grab;
+}
+.station-canvas:active {
+  cursor: grabbing;
+}
+.station-map {
+  left: auto;
+  right: 24px;
+  top: 100px;
+  width: 190px;
+  padding: 12px;
+  background: #081622b8;
+}
+.station-map svg {
+  display: block;
+  width: 100%;
+  color: #83c5dc;
+}
+.station-directory {
+  display: grid;
+  gap: 5px;
+  font-size: 10px;
+  color: var(--muted);
+}
+.station-directory [aria-current] {
+  color: var(--accent);
+}
+.station-status {
+  max-width: min(520px, calc(100% - 220px));
+  background: #081622c9;
+}
+.station-walk button:nth-child(5) {
+  grid-column: 1;
+}
+.station-walk button:nth-child(6) {
+  grid-column: 3;
+}
+@media (max-width: 700px) {
+  .station-map {
+    right: 12px;
+    left: auto;
+    top: 90px;
+    width: 130px;
+    padding: 8px;
+  }
+  .station-map .eyebrow {
+    font-size: 7px;
+    letter-spacing: 1px;
+  }
+  .station-directory {
+    font-size: 8px;
+    gap: 3px;
+  }
+  .station-status {
+    max-width: calc(100% - 180px);
+  }
+  .station-header p {
+    max-width: 220px;
+  }
+}
+
+.character-model-preview {
+  display: block;
+  width: 100%;
+  height: 440px;
+  touch-action: none;
+  cursor: grab;
+}
+.character-model-preview:active {
+  cursor: grabbing;
+}
+.character-model-preview:focus-visible {
+  outline: 2px solid var(--accent);
+}
+@media (max-width: 700px) {
+  .character-model-preview {
+    height: 330px;
+  }
+}
