@@ -1,174 +1,316 @@
+import * as THREE from 'three';
 import { createCameraController } from './flight/camera.ts';
 import { createFlight } from './flight/flight.ts';
 import { createInput, type InputCommand } from './flight/input.ts';
+import { initialTelemetry, readTelemetry } from './flight/telemetry.ts';
 import { createGlow } from './graphics/glow.ts';
 import { createRenderer } from './graphics/renderer.ts';
 import { createSky } from './graphics/sky.ts';
 import { createShip } from './ships/ship.ts';
-import { createHud } from './ui/hud.ts';
-import { createMenus } from './ui/menus.ts';
-import { createShipSelection } from './ui/ship-selection.ts';
+import { createShipSelection } from './ships/selection.ts';
+import { createStore } from './state.ts';
 import { createWorlds } from './worlds/worlds.ts';
+import type { WorldId } from './worlds/catalog.ts';
 
-export function startGame(canvas: HTMLCanvasElement) {
-  const graphics = createRenderer(canvas);
-  const glow = createGlow();
-  const sky = createSky(glow);
-  const worlds = createWorlds(glow);
-  const ship = createShip(glow);
-  graphics.scene.add(sky.object, worlds.object, ship.object);
-  const flight = createFlight(ship.object);
-  const camera = createCameraController(graphics.camera, ship.object);
-  let started = false;
-  let paused = false;
-  let choosingShip = false;
-  let target = worlds.getTarget('pelagos');
-  let lastTime = 0;
-  let firstFrameRendered = false;
+export interface Session {
+  ready: boolean;
+  started: boolean;
+  paused: boolean;
+  choosingShip: boolean;
+  helpVisible: boolean;
+  targetId: WorldId;
+  notice: string;
+  error: string | null;
+}
 
-  const menus = createMenus({
-    onLaunch: launch,
-    onChooseShip: openShipSelection,
-    onTogglePause: () => setPaused(!paused),
-    onResume: () => setPaused(false),
-  });
-  const selection = createShipSelection({
-    onChange: (choice) => ship.setSelection(choice),
-    onClose: closeShipSelection,
-  });
-  const hud = createHud(
-    ship.object,
-    graphics.camera,
-    (id) => {
-      target = worlds.getTarget(id);
-      hud.setTarget(target);
-    },
-    jump,
-  );
-  hud.setTarget(target);
-  const input = createInput({
-    hasStarted: () => started,
-    canFly: () => started && !paused,
-    isPreviewing: () => choosingShip,
-    onCommand: handleCommand,
-    onFocusLost: () => setPaused(true),
-  });
-  camera.place(true, 0, false);
+export interface TargetMarker {
+  hidden: boolean;
+  x: number;
+  y: number;
+}
+
+interface GameRuntime {
+  launch: () => void;
+  clearInput: () => void;
+  setPreview: (active: boolean) => void;
+  reset: (started: boolean) => void;
+  jump: (id: WorldId) => string;
+  press: (key: string) => void;
+  release: (key: string) => void;
+}
+
+const initialSession: Session = {
+  ready: false,
+  started: false,
+  paused: false,
+  choosingShip: false,
+  helpVisible: false,
+  targetId: 'pelagos',
+  notice: '',
+  error: null,
+};
+
+export function createGame() {
+  const session = createStore(initialSession);
+  const telemetry = createStore(initialTelemetry);
+  const selection = createShipSelection();
+  let runtime: GameRuntime | null = null;
+  let stop: (() => void) | null = null;
+  let noticeTimeout: ReturnType<typeof setTimeout> | undefined;
+
+  function notify(message: string) {
+    session.update({ notice: message });
+    clearTimeout(noticeTimeout);
+    noticeTimeout = setTimeout(() => session.update({ notice: '' }), 4000);
+  }
 
   function launch() {
-    if (started) return;
-    started = true;
-    flight.launch();
-    menus.launch();
-    menus.notify('Welcome aboard. WASD to steer · Shift to boost · Space to brake.');
+    if (!runtime || session.getSnapshot().started) return;
+    runtime.launch();
+    session.update({ started: true, helpVisible: false });
+    notify('Welcome aboard. WASD to steer · Shift to boost · Space to brake.');
   }
 
-  function setPaused(value: boolean) {
-    if (!started) return;
-    paused = value;
-    input.clear();
-    menus.setPaused(paused);
-  }
-
-  // Preview changes several parts of the scene, so coordinate it here instead of
-  // making the ship, worlds, camera and menus reach into each other's state.
-  function setPreview(active: boolean) {
-    choosingShip = active;
-    worlds.setVisible(!active);
-    graphics.setPreview(active);
-    menus.setPreview(active);
-    ship.setPreview(active);
-    camera.place(true, 0, active);
+  function setPaused(paused: boolean) {
+    if (!session.getSnapshot().started) return;
+    runtime?.clearInput();
+    session.update({ paused });
   }
 
   function openShipSelection() {
-    if (started) return;
+    if (!runtime || session.getSnapshot().started) return;
     // Clear the planets from the preview and light the hull so the ship is the focus.
-    setPreview(true);
-    selection.open();
+    runtime.setPreview(true);
+    session.update({ choosingShip: true, helpVisible: false });
   }
 
   function closeShipSelection(confirm: boolean) {
-    setPreview(false);
-    selection.close(confirm);
+    if (!session.getSnapshot().choosingShip) return;
+    if (confirm) selection.confirm();
+    else selection.cancel();
+    runtime?.setPreview(false);
+    session.update({ choosingShip: false });
   }
 
   function reset() {
-    flight.reset(started);
-    ship.setBank(flight.bank);
-    input.clear();
-    camera.place(true, 0, choosingShip);
-    menus.notify('Returned to your starting coordinates.');
+    runtime?.reset(session.getSnapshot().started);
+    notify('Returned to your starting coordinates.');
   }
 
   function jump() {
+    if (!runtime) return;
     launch();
     setPaused(false);
-    flight.jump(target);
-    camera.place(true, 0, choosingShip);
-    menus.notify(`Jump complete. Approaching ${target.name}.`);
+    const name = runtime.jump(session.getSnapshot().targetId);
+    notify(`Jump complete. Approaching ${name}.`);
+  }
+
+  function toggleHelp() {
+    session.update({ helpVisible: !session.getSnapshot().helpVisible });
   }
 
   function handleCommand(command: InputCommand) {
+    const state = session.getSnapshot();
     if (command === 'escape') {
-      if (menus.helpVisible) menus.hideHelp();
-      else if (choosingShip) closeShipSelection(false);
-      else setPaused(!paused);
-    } else if (command === 'pause') setPaused(!paused);
-    else if (command === 'help') menus.toggleHelp();
+      if (state.helpVisible) session.update({ helpVisible: false });
+      else if (state.choosingShip) closeShipSelection(false);
+      else setPaused(!state.paused);
+    } else if (command === 'pause') setPaused(!state.paused);
+    else if (command === 'help') toggleHelp();
     else if (command === 'reset') reset();
   }
 
-  window.addEventListener('resize', () => {
-    graphics.resize();
-    if (choosingShip) camera.place(true, 0, true);
-  });
-  canvas.addEventListener('webglcontextlost', (event) => {
-    event.preventDefault();
-    setPaused(true);
-    menus.showGraphicsError();
-  });
+  function start(canvas: HTMLCanvasElement, updateMarker: (marker: TargetMarker) => void) {
+    stop?.();
+    selection.cancel();
+    session.update(initialSession);
+    telemetry.update(initialTelemetry);
+    const events = new AbortController();
+    let graphics: ReturnType<typeof createRenderer> | undefined;
+    let glow: ReturnType<typeof createGlow> | undefined;
+    let input: ReturnType<typeof createInput> | undefined;
+    let unsubscribeSelection: (() => void) | undefined;
+    let disposed = false;
 
-  graphics.setAnimationLoop((time) => {
-    // Cap elapsed time after a slow frame so the ship cannot jump through a planet.
-    const dt = lastTime ? Math.min((time - lastTime) / 1000, 0.05) : 0;
-    lastTime = time;
-    const controls = input.read();
-    if (started && !paused) {
-      flight.update(dt, controls);
-      ship.setBank(flight.bank);
-      worlds.checkProximity(
-        ship.object.position,
-        (world) => {
-          menus.notify(`${world.name} discovered.`);
+    function dispose() {
+      if (disposed) return;
+      disposed = true;
+      events.abort();
+      clearTimeout(noticeTimeout);
+      unsubscribeSelection?.();
+      input?.dispose();
+      graphics?.dispose();
+      glow?.dispose();
+      runtime = null;
+      stop = null;
+    }
+    stop = dispose;
+
+    try {
+      const renderer = createRenderer(canvas);
+      graphics = renderer;
+      glow = createGlow();
+      const sky = createSky(glow.createSprite);
+      renderer.scene.add(sky.object);
+      const worlds = createWorlds(glow.createSprite);
+      renderer.scene.add(worlds.object);
+      const ship = createShip(glow.createSprite);
+      renderer.scene.add(ship.object);
+      const flight = createFlight(ship.object);
+      const camera = createCameraController(renderer.camera, ship.object);
+      const controls = createInput({
+        hasStarted: () => session.getSnapshot().started,
+        canFly: () => {
+          const state = session.getSnapshot();
+          return state.started && !state.paused;
         },
-        (world, direction) => {
-          flight.stopAtSurface(world, direction);
-          menus.notify(`${world.name} proximity limit. Turn away to continue exploring.`);
+        isPreviewing: () => session.getSnapshot().choosingShip,
+        onCommand: handleCommand,
+        onFocusLost: () => setPaused(true),
+      });
+      input = controls;
+      const applySelection = () => ship.setSelection(selection.getSnapshot());
+      applySelection();
+      unsubscribeSelection = selection.subscribe(applySelection);
+      camera.place(true, 0, false);
+
+      runtime = {
+        launch: () => flight.launch(),
+        clearInput: controls.clear,
+        // Preview changes several parts of the scene, so coordinate it here instead of
+        // making the ship, worlds, camera and menus reach into each other's state.
+        setPreview(active) {
+          worlds.setVisible(!active);
+          renderer.setPreview(active);
+          ship.setPreview(active);
+          camera.place(true, 0, active);
         },
+        reset(started) {
+          flight.reset(started);
+          ship.setBank(flight.bank);
+          controls.clear();
+          camera.place(true, 0, session.getSnapshot().choosingShip);
+        },
+        jump(id) {
+          const target = worlds.getTarget(id);
+          flight.jump(target);
+          camera.place(true, 0, false);
+          return target.name;
+        },
+        press: controls.press,
+        release: controls.release,
+      };
+
+      window.addEventListener(
+        'resize',
+        () => {
+          renderer.resize();
+          if (session.getSnapshot().choosingShip) camera.place(true, 0, true);
+        },
+        { signal: events.signal },
       );
-      sky.follow(ship.object.position);
-      camera.place(false, dt, choosingShip);
+      canvas.addEventListener(
+        'webglcontextlost',
+        (event) => {
+          event.preventDefault();
+          setPaused(true);
+          session.update({
+            error:
+              'The graphics connection was interrupted. Reload the page to restart your flight.',
+          });
+        },
+        { signal: events.signal },
+      );
+
+      let lastTime = 0;
+      let hudElapsed = 0;
+      let firstFrameRendered = false;
+      const markerPosition = new THREE.Vector3();
+      const cameraDirection = new THREE.Vector3();
+      const separation = new THREE.Vector3();
+
+      renderer.setAnimationLoop((time) => {
+        // Cap elapsed time after a slow frame so the ship cannot jump through a planet.
+        const dt = lastTime ? Math.min((time - lastTime) / 1000, 0.05) : 0;
+        lastTime = time;
+        const state = session.getSnapshot();
+        const keys = controls.read();
+        const target = worlds.getTarget(state.targetId);
+        if (state.started && !state.paused) {
+          flight.update(dt, keys);
+          ship.setBank(flight.bank);
+          worlds.checkProximity(
+            ship.object.position,
+            (world) => {
+              notify(`${world.name} discovered.`);
+            },
+            (world, direction) => {
+              flight.stopAtSurface(world, direction);
+              notify(`${world.name} proximity limit. Turn away to continue exploring.`);
+            },
+          );
+          sky.follow(ship.object.position);
+          camera.place(false, dt, state.choosingShip);
+        }
+        if (!state.paused) {
+          worlds.update(dt);
+          const enginePower = state.started ? (keys.braking ? 0.3 : keys.boosting ? 1.8 : 1) : 0.65;
+          ship.update(dt, time, enginePower, state.choosingShip);
+        }
+
+        markerPosition.copy(target.position).project(renderer.camera);
+        renderer.camera.getWorldDirection(cameraDirection);
+        separation.subVectors(target.position, renderer.camera.position);
+        updateMarker({
+          hidden:
+            cameraDirection.dot(separation) <= 0 ||
+            Math.abs(markerPosition.x) > 0.93 ||
+            Math.abs(markerPosition.y) > 0.75,
+          x: (markerPosition.x * 0.5 + 0.5) * innerWidth,
+          y: (-markerPosition.y * 0.5 + 0.5) * innerHeight,
+        });
+        // Publish readouts ten times a second; movement and rendering keep their own pace.
+        hudElapsed += dt;
+        if (hudElapsed > 0.1 || !state.started) {
+          hudElapsed = 0;
+          telemetry.update(
+            readTelemetry(flight, keys, ship.object.position, target, worlds.discoveredCount),
+          );
+        }
+        renderer.render();
+        // Show the interface only after the canvas has its first frame.
+        if (!firstFrameRendered) {
+          session.update({ ready: true });
+          firstFrameRendered = true;
+        }
+      });
+    } catch (cause) {
+      dispose();
+      session.update({
+        ready: true,
+        error: `Unable to start the flight. Please use a browser with WebGL 2 and hardware acceleration enabled. ${String(cause)}`,
+      });
     }
-    if (!paused) {
-      worlds.update(dt);
-      const enginePower = started ? (controls.braking ? 0.3 : controls.boosting ? 1.8 : 1) : 0.65;
-      ship.update(dt, time, enginePower, choosingShip);
-    }
-    hud.update({
-      dt,
-      started,
-      paused,
-      controls,
-      flight,
-      target,
-      discoveredCount: worlds.discoveredCount,
-    });
-    graphics.render();
-    // Show the interface only after the canvas has its first frame.
-    if (!firstFrameRendered) {
-      menus.show();
-      firstFrameRendered = true;
-    }
-  });
+    return dispose;
+  }
+
+  return {
+    session: { getSnapshot: session.getSnapshot, subscribe: session.subscribe },
+    telemetry: { getSnapshot: telemetry.getSnapshot, subscribe: telemetry.subscribe },
+    selection,
+    start,
+    launch,
+    openShipSelection,
+    closeShipSelection,
+    toggleHelp,
+    hideHelp: () => session.update({ helpVisible: false }),
+    togglePause: () => setPaused(!session.getSnapshot().paused),
+    resume: () => setPaused(false),
+    selectTarget: (targetId: WorldId) => session.update({ targetId }),
+    jump,
+    pressControl: (key: string) => runtime?.press(key),
+    releaseControl: (key: string) => runtime?.release(key),
+  };
 }
+
+export type Game = ReturnType<typeof createGame>;

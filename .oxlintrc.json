@@ -1,10 +1,14 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["typescript", "unicorn", "oxc"],
+  "plugins": ["typescript", "unicorn", "oxc", "react", "jsx-a11y", "vitest"],
   "categories": {
     "correctness": "error"
   },
-  "rules": {},
+  "rules": {
+    "react/rules-of-hooks": "error",
+    "react/exhaustive-deps": "error",
+    "jsx-a11y/prefer-tag-over-role": "off"
+  },
   "env": {
     "builtin": true
   }

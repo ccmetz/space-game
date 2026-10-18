@@ -52,6 +52,26 @@ export function createRenderer(canvas: HTMLCanvasElement) {
     setAnimationLoop(callback: (time: number) => void) {
       renderer.setAnimationLoop(callback);
     },
+    dispose() {
+      renderer.setAnimationLoop(null);
+      // Models share materials, so release each resource once when React unmounts.
+      const geometries = new Set<THREE.BufferGeometry>();
+      const materials = new Set<THREE.Material>();
+      scene.traverse((object) => {
+        const drawable = object as THREE.Mesh;
+        if (drawable.geometry) geometries.add(drawable.geometry);
+        if (drawable.material) {
+          const owned = Array.isArray(drawable.material) ? drawable.material : [drawable.material];
+          owned.forEach((material) => materials.add(material));
+        }
+      });
+      geometries.forEach((geometry) => geometry.dispose());
+      materials.forEach((material) => material.dispose());
+      composer.passes.forEach((pass) => pass.dispose());
+      composer.dispose();
+      scene.clear();
+      renderer.dispose();
+    },
     render() {
       composer.render();
     },

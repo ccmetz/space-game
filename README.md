@@ -4,7 +4,7 @@
 
 ## Game Description
 
-A small, open-ended space flight game built with Three.js, TypeScript, and Vite.
+A small, open-ended space flight game built with Three.js, React, TypeScript, and Vite.
 Choose a starfighter, interceptor, or explorer and fly past three planets and a
 star. No missions or combat yet — just a place to explore.
 
@@ -56,17 +56,34 @@ progress is kept for the current session and resets on reload.
 
 ## Project structure
 
-- `src/main.ts` starts the game and reports startup failures.
-- `src/game.ts` connects the modules, owns game modes, and runs the frame loop.
-- `src/ships/` owns ship definitions, models, paint materials, and engine effects.
+- `src/main.tsx` mounts the React interface in Strict Mode.
+- `src/game.ts` connects the modules, owns game state, and runs the Three.js frame loop.
+- `src/ships/` owns ship definitions, selection/persistence, models, paint materials, and engine effects.
 - `src/worlds/` builds planets and the star, animates surfaces, and tracks discovery and proximity.
 - `src/flight/` owns movement, keyboard/touch input, and follow/preview cameras.
 - `src/graphics/` sets up rendering, lights, the sky, and shared glow resources.
-- `src/ui/` owns DOM updates, menus, navigation, and ship selection with browser storage.
+- `src/ui/` contains the React menus, HUD, navigation, ship selection, and touch controls.
+- `src/state.ts` provides immutable snapshots and subscriptions for the game and interface.
 
 Modules keep their own state. `game.ts` coordinates behavior that affects several
 modules, such as entering the ship preview or stopping flight near a surface.
 Ship, paint, and world controls use stable IDs instead of array positions.
 
-Run the regression tests with `npm test` using Node.js 24 or later. They use Node's
-built-in test runner and TypeScript support, with no additional test dependencies.
+React reads game-owned snapshots with `useSyncExternalStore` and calls game actions
+from event handlers. Session state, HUD telemetry, and ship selection have separate
+subscriptions, so instrument updates do not rerender the menus. Ship transforms,
+camera motion, and animations stay in Three.js. HUD readouts update about ten times
+a second; the target marker moves through a React ref every frame.
+
+The canvas starts in a React effect. Cleanup stops the render loop, removes input
+and window listeners, clears notification timers, and disposes graphics resources.
+This supports Strict Mode remounts and Vite Fast Refresh without duplicate games.
+
+Use Node.js 22.12 or later for tests. `npm test` runs the suite once, and
+`npm run test:watch` reruns it as files change. Tests use Vitest with the shared
+Vite configuration in a Node environment. `npm run build` checks types in both
+application code and tests.
+
+Keep module-specific tests beside the source file they exercise, using the same
+name with a `.test.ts` or `.test.tsx` suffix. Keep general tests and scenarios
+that exercise several modules together in `tests/`.

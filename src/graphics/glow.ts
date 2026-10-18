@@ -28,7 +28,12 @@ export function createGlow() {
     return sprite;
   }
 
-  return glow;
+  return {
+    createSprite: glow,
+    dispose() {
+      glowTexture.dispose();
+    },
+  };
 }
 
-export type Glow = ReturnType<typeof createGlow>;
+export type Glow = ReturnType<typeof createGlow>['createSprite'];

@@ -1,0 +1,46 @@
+export const worldDefinitions = [
+  {
+    id: 'pelagos',
+    name: 'Pelagos',
+    description: 'OCEAN WORLD',
+    icon: 'ocean',
+    position: [330, 135, -720],
+    radius: 195,
+    kind: 0,
+    base: '#17495b',
+    detail: '#739c87',
+  },
+  {
+    id: 'cinder',
+    name: 'Cinder',
+    description: 'DESERT WORLD',
+    icon: 'desert',
+    position: [1100, -170, -1900],
+    radius: 145,
+    kind: 1,
+    base: '#8c5137',
+    detail: '#c6a77b',
+  },
+  {
+    id: 'aurelia',
+    name: 'Aurelia',
+    description: 'RINGED GIANT',
+    icon: 'ringed',
+    position: [-1250, -180, -2400],
+    radius: 225,
+    kind: 2,
+    base: '#82725e',
+    detail: '#d4bea1',
+  },
+  {
+    id: 'solace',
+    name: 'Solace',
+    description: 'YELLOW STAR',
+    icon: 'solar',
+    position: [-850, 380, -1900],
+    radius: 120,
+    kind: 'star',
+  },
+] as const;
+
+export type WorldId = (typeof worldDefinitions)[number]['id'];
