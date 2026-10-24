@@ -11,29 +11,29 @@ and the conventions to follow as those features are added.
 
 ## Module ownership
 
-| Location                     | Responsibility                                                                                                     |
-| ---------------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| `src/main.tsx`               | Creates the game controller and mounts React in Strict Mode.                                                       |
-| `src/game.ts`                | Connects the modules, owns session state and game actions, and coordinates the frame loop and runtime cleanup.     |
-| `src/station/station.ts`     | Owns station layout, collision, walking input, crew dialogue, room state, rendering, and cleanup.                  |
-| `src/character/model.ts`     | Builds the shared character model, hairstyles, facial features, and animation limbs for registration and gameplay. |
-| `src/character/character.ts` | Owns character appearance and class catalogs, registration state, validation, and local storage.                   |
-| `src/state.ts`               | Provides cached snapshots, change notifications, and subscription cleanup without importing React.                 |
-| `src/ships/catalog.ts`       | Defines ship identities and paint schemes with stable IDs.                                                         |
-| `src/ships/ship.ts`          | Builds ship models and owns shared materials, paint changes, model banking, and engine effects.                    |
-| `src/ships/selection.ts`     | Owns draft and confirmed ship choices and browser storage.                                                         |
-| `src/worlds/catalog.ts`      | Defines world identities, navigation descriptions, positions, sizes, and appearance settings.                      |
-| `src/worlds/worlds.ts`       | Builds the world layout, tracks discovery, checks proximity, and animates planets.                                 |
-| `src/worlds/planets.ts`      | Builds planet surfaces, shaders, atmospheres, and rings.                                                           |
-| `src/flight/flight.ts`       | Owns speed, orientation, steering, trip distance, reset, jump, and surface-stop behavior.                          |
-| `src/flight/input.ts`        | Reads keyboard input, accepts touch-control presses and releases, and handles focus loss.                          |
-| `src/flight/camera.ts`       | Positions the follow camera and the ship-preview camera.                                                           |
-| `src/flight/telemetry.ts`    | Reads simulation values into the snapshot displayed by the HUD.                                                    |
-| `src/graphics/renderer.ts`   | Sets up the scene, renderer, lights, postprocessing, resizing, and graphics cleanup.                               |
-| `src/graphics/sky.ts`        | Builds the seeded starfield and nebula and makes them follow the player.                                           |
-| `src/graphics/glow.ts`       | Creates the glow texture shared by the sky, star, and ship engines.                                                |
-| `src/ui/`                    | Contains React views, event handlers, focus management, and the root-element lookup helper.                        |
-| `src/style.css`              | Styles the interface and its responsive layouts.                                                                   |
+| Location                     | Responsibility                                                                                                                             |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| `src/main.tsx`               | Creates the game controller and mounts React in Strict Mode.                                                                               |
+| `src/game.ts`                | Connects the modules, owns session state and game actions, and coordinates the frame loop and runtime cleanup.                             |
+| `src/station/station.ts`     | Owns station layout, collision, walking input, crew dialogue, room state, rendering, and cleanup.                                          |
+| `src/character/model.ts`     | Builds the shared character model, fitted hairstyles, facial features, skeletons, and walking/running poses for registration and gameplay. |
+| `src/character/character.ts` | Owns character appearance and class catalogs, registration state, validation, and local storage.                                           |
+| `src/state.ts`               | Provides cached snapshots, change notifications, and subscription cleanup without importing React.                                         |
+| `src/ships/catalog.ts`       | Defines ship identities and paint schemes with stable IDs.                                                                                 |
+| `src/ships/ship.ts`          | Builds ship models and owns shared materials, paint changes, model banking, and engine effects.                                            |
+| `src/ships/selection.ts`     | Owns draft and confirmed ship choices and browser storage.                                                                                 |
+| `src/worlds/catalog.ts`      | Defines world identities, navigation descriptions, positions, sizes, and appearance settings.                                              |
+| `src/worlds/worlds.ts`       | Builds the world layout, tracks discovery, checks proximity, and animates planets.                                                         |
+| `src/worlds/planets.ts`      | Builds planet surfaces, shaders, atmospheres, and rings.                                                                                   |
+| `src/flight/flight.ts`       | Owns speed, orientation, steering, trip distance, reset, jump, and surface-stop behavior.                                                  |
+| `src/flight/input.ts`        | Reads keyboard input, accepts touch-control presses and releases, and handles focus loss.                                                  |
+| `src/flight/camera.ts`       | Positions the follow camera and the ship-preview camera.                                                                                   |
+| `src/flight/telemetry.ts`    | Reads simulation values into the snapshot displayed by the HUD.                                                                            |
+| `src/graphics/renderer.ts`   | Sets up the scene, renderer, lights, postprocessing, resizing, and graphics cleanup.                                                       |
+| `src/graphics/sky.ts`        | Builds the seeded starfield and nebula and makes them follow the player.                                                                   |
+| `src/graphics/glow.ts`       | Creates the glow texture shared by the sky, star, and ship engines.                                                                        |
+| `src/ui/`                    | Contains React views, event handlers, focus management, and the root-element lookup helper.                                                |
+| `src/style.css`              | Styles the interface and its responsive layouts.                                                                                           |
 
 Keep behavior and its state together. For example, changing a ship's paint goes
 through the ship module, which updates the shared materials and engine effects.
@@ -103,7 +103,12 @@ The station uses a third-person orbit camera with raycast obstruction checks aga
 Its frame loop animates walking and crew, checks interaction reach, and publishes map/room snapshots ten times a second.
 Station labels own canvas textures, which are disposed alongside input listeners and graphics on cleanup.
 Character registration renders its shared character model on demand when appearance, rotation, or size changes.
-Its preview owns and disposes its renderer, resize observer, model resources, and pointer listeners.
+The Walk and Run preview controls enable a frame loop using the same animation as station movement.
+Its preview owns and disposes its renderer, resize observer, model resources, environment and shadow maps, and pointer listeners.
+The character model owns limb skeletons and blends walking, running, and idle poses. The station passes
+actual distance traveled per frame, so collision stops the stepping animation. Hip height and knee/ankle
+angles follow ground-level foot targets, while elbows and the torso provide opposing upper-body movement.
+Character animation moves an inner group; the outer group keeps the station position and ground shadow stable.
 Returning to character editing unmounts flight and cleans up its runtime.
 Character choices persist only on confirmation; blocked storage keeps them usable
 for the current session and displays a warning in the flight menu.

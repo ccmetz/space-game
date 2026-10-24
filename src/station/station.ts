@@ -1,6 +1,10 @@
 import * as THREE from 'three';
 import { type Character, suitColors } from '../character/character.ts';
-import { createCharacterModel, type CharacterAppearance } from '../character/model.ts';
+import {
+  characterSpeeds,
+  createCharacterModel,
+  type CharacterAppearance,
+} from '../character/model.ts';
 import { createRenderer } from '../graphics/renderer.ts';
 import { createStore } from '../state.ts';
 
@@ -275,6 +279,7 @@ export function createStation(onBoard: () => void = () => {}) {
       keys.clear();
       const events = new AbortController();
       const textures: THREE.Texture[] = [];
+      const disposeCharacters: (() => void)[] = [];
       let graphics: ReturnType<typeof createRenderer> | undefined;
       const cleanup = () => {
         events.abort();
@@ -282,6 +287,7 @@ export function createStation(onBoard: () => void = () => {}) {
         interact = () => {};
         turn = () => {};
         textures.forEach((texture) => texture.dispose());
+        disposeCharacters.forEach((dispose) => dispose());
         graphics?.dispose();
       };
       try {
@@ -628,6 +634,14 @@ export function createStation(onBoard: () => void = () => {}) {
           shadow.rotation.x = -Math.PI / 2;
           shadow.position.y = 0.018;
           model.group.add(shadow);
+          // Characters own their fabric/skin textures as well as their meshes.
+          // Remove them before the scene cleanup so each resource is freed once.
+          disposeCharacters.push(() => {
+            model.group.removeFromParent();
+            model.dispose();
+            shadow.geometry.dispose();
+            shadow.material.dispose();
+          });
           model.group.position.set(x, 0, z);
           renderer.scene.add(model.group);
           return model;
@@ -753,7 +767,6 @@ export function createStation(onBoard: () => void = () => {}) {
         );
         renderer.scene.updateMatrixWorld(true);
         let previous = 0;
-        let elapsed = 0;
         let publishElapsed = 0;
         const lookAt = new THREE.Vector3();
         const desiredCamera = new THREE.Vector3();
@@ -763,7 +776,6 @@ export function createStation(onBoard: () => void = () => {}) {
           const dt = previous ? Math.min((time - previous) / 1000, 0.05) : 0;
           previous = time;
           if (!store.getSnapshot().paused) {
-            elapsed += dt;
             yaw +=
               (Number(keys.has('KeyQ') || keys.has('ArrowLeft')) -
                 Number(keys.has('KeyR') || keys.has('ArrowRight'))) *
@@ -776,22 +788,25 @@ export function createStation(onBoard: () => void = () => {}) {
             const length = Math.hypot(forward, side) || 1;
             const x = (Math.sin(yaw) * forward - Math.cos(yaw) * side) / length;
             const z = (Math.cos(yaw) * forward + Math.sin(yaw) * side) / length;
-            const distance = dt * (keys.has('ShiftLeft') || keys.has('ShiftRight') ? 7 : 4);
+            const distance =
+              dt *
+              (keys.has('ShiftLeft') || keys.has('ShiftRight')
+                ? characterSpeeds.run
+                : characterSpeeds.walk);
             const position = player.group.position;
+            const previousX = position.x;
+            const previousZ = position.z;
             const clear = (px: number, pz: number) =>
               canStand(px, pz) && !crew.some((npc) => Math.hypot(px - npc.x, pz - npc.z) < 0.8);
             // Resolve each axis separately so walking into a wall slides along it.
             // Small steps also prevent running through narrow objects after a slow frame.
             const steps = Math.max(1, Math.ceil(distance / 0.12));
-            let moved = false;
             for (let i = 0; i < steps; i++) {
               if (clear(position.x + (x * distance) / steps, position.z)) {
                 position.x += (x * distance) / steps;
-                moved ||= x !== 0;
               }
               if (clear(position.x, position.z + (z * distance) / steps)) {
                 position.z += (z * distance) / steps;
-                moved ||= z !== 0;
               }
             }
             if (forward || side) {
@@ -802,21 +817,14 @@ export function createStation(onBoard: () => void = () => {}) {
                   Math.cos(target - player.group.rotation.y),
                 ) * Math.min(1, dt * 12);
             }
-            player.limbs.forEach((limb, index) => {
-              limb.rotation.x = moved
-                ? Math.sin(
-                    elapsed * (distance / (dt || 1) > 5 ? 12 : 8) +
-                      (index < 2 ? 0 : Math.PI) +
-                      (index % 2 ? Math.PI : 0),
-                  ) * 0.5
-                : 0;
-            });
-            models.forEach((model, index) => {
+            const traveled = Math.hypot(position.x - previousX, position.z - previousZ);
+            player.animate(dt, dt > 0 ? traveled / dt : 0);
+            models.forEach((model) => {
               model.group.rotation.y = Math.atan2(
                 position.x - model.group.position.x,
                 position.z - model.group.position.z,
               );
-              model.limbs[1].rotation.x = Math.sin(elapsed + index) * 0.06;
+              model.animate(dt, 0);
             });
           }
           const position = player.group.position;

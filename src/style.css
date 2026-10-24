@@ -2488,6 +2488,25 @@ h1 em {
   }
 }
 
+.character-preview-views {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px 12px 0;
+}
+.character-preview-views button {
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 7px 12px;
+  background: var(--surface);
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.character-preview-views button[aria-pressed='true'] {
+  border-color: var(--accent);
+  color: var(--accent);
+}
 .character-model-preview {
   display: block;
   width: 100%;

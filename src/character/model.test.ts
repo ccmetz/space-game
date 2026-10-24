@@ -1,7 +1,7 @@
 import * as THREE from 'three';
-import { expect, test } from 'vitest';
+import { expect, test, vi } from 'vitest';
 import { createCharacter, hairStyles } from './character.ts';
-import { createCharacterModel } from './model.ts';
+import { characterSpeeds, createCharacterModel } from './model.ts';
 
 function hairShape(model: ReturnType<typeof createCharacterModel>) {
   model.group.updateMatrixWorld(true);
@@ -59,3 +59,87 @@ test('confirmed character retains the same model as its preview after saving and
   preview.dispose();
   player.dispose();
 });
+
+test('detailed characters retain moving limbs and release their owned graphics resources', () => {
+  const model = createCharacterModel({
+    skin: 'deep',
+    hair: 'silver',
+    hairstyle: 'long',
+    suit: 'blue',
+  });
+  const geometries = new Set<THREE.BufferGeometry>();
+  const materials = new Set<THREE.MeshStandardMaterial>();
+  const textures = new Set<THREE.Texture>();
+  const skeletons = new Set<THREE.Skeleton>();
+  model.group.traverse((object) => {
+    const mesh = object as THREE.Mesh<THREE.BufferGeometry, THREE.MeshStandardMaterial>;
+    if (!mesh.isMesh) return;
+    geometries.add(mesh.geometry);
+    materials.add(mesh.material);
+    if (mesh.material.bumpMap) textures.add(mesh.material.bumpMap);
+    if (mesh.material.alphaMap) textures.add(mesh.material.alphaMap);
+    const skinned = object as THREE.SkinnedMesh;
+    if (skinned.isSkinnedMesh) skeletons.add(skinned.skeleton);
+    const positions = mesh.geometry.getAttribute('position');
+    expect(Array.from(positions.array).every(Number.isFinite)).toBe(true);
+  });
+
+  // The station expects alternating left leg/arm and right leg/arm pivots.
+  expect(model.limbs).toHaveLength(4);
+  for (const limb of model.limbs) {
+    const before = new THREE.Box3().setFromObject(limb);
+    limb.rotation.x = 0.45;
+    expect(new THREE.Box3().setFromObject(limb)).not.toEqual(before);
+  }
+  expect(textures.size).toBe(3);
+  expect(skeletons.size).toBe(4);
+  const disposals = [...geometries, ...materials, ...textures, ...skeletons].map((resource) =>
+    vi.spyOn(resource, 'dispose'),
+  );
+  model.dispose();
+  for (const dispose of disposals) expect(dispose).toHaveBeenCalledOnce();
+});
+
+test.each(['walk', 'run'] as const)(
+  '%s bends the joints while keeping stance boots on the floor',
+  (gait) => {
+    const model = createCharacterModel({
+      skin: 'sand',
+      hair: 'dark',
+      hairstyle: 'crop',
+      suit: 'sage',
+    });
+    model.group.position.set(2, 0, -3);
+    model.group.rotation.y = 0.4;
+    let greatestKneeBend = 0;
+    const point = new THREE.Vector3();
+    for (let frame = 0; frame < 100; frame++) {
+      model.animate(1 / 60, characterSpeeds[gait]);
+      model.group.updateMatrixWorld(true);
+      if (frame % 5) continue;
+      let lowestBoot = Infinity;
+      for (const limb of [model.limbs[0], model.limbs[2]]) {
+        for (const object of limb.children) {
+          const mesh = object as THREE.SkinnedMesh;
+          if (!mesh.isSkinnedMesh) continue;
+          greatestKneeBend = Math.max(greatestKneeBend, mesh.skeleton.bones[1].rotation.x);
+          for (let vertex = 0; vertex < mesh.geometry.getAttribute('position').count; vertex++) {
+            mesh.getVertexPosition(vertex, point).applyMatrix4(mesh.matrixWorld);
+            lowestBoot = Math.min(lowestBoot, point.y);
+          }
+        }
+      }
+      expect(lowestBoot).toBeGreaterThanOrEqual(-0.005);
+      expect(lowestBoot).toBeLessThan(gait === 'walk' ? 0.02 : 0.09);
+    }
+    expect(greatestKneeBend).toBeGreaterThan(gait === 'walk' ? 0.5 : 1);
+    expect(model.group.position.toArray()).toEqual([2, 0, -3]);
+    expect(model.group.rotation.y).toBe(0.4);
+    // Releasing movement (or hitting a wall) settles the legs instead of leaving
+    // a foot suspended in the last running pose.
+    for (let frame = 0; frame < 120; frame++) model.animate(1 / 60, 0);
+    expect(Math.abs(model.limbs[0].rotation.x - model.limbs[2].rotation.x)).toBeLessThan(0.001);
+    expect(Math.abs(model.limbs[0].rotation.x)).toBeLessThan(0.1);
+    model.dispose();
+  },
+);
