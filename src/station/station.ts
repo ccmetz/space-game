@@ -1,5 +1,11 @@
 import * as THREE from 'three';
-import { type Character, suitColors } from '../character/character.ts';
+import {
+  type Character,
+  suitColors,
+  skinTones,
+  hairColors,
+  hairStyles,
+} from '../character/character.ts';
 import {
   characterSpeeds,
   createCharacterModel,
@@ -138,39 +144,63 @@ export interface StationInteraction {
 const crew = [
   {
     name: 'Mara · Dockmaster',
+    heading: -Math.PI / 2,
     ...worldPoint(rooms[0].angle, -5, 46),
-    color: '#d5a45b',
     line: 'Your shuttle is ready. The boarding terminal beside the ship will take you to flight preparation.',
   },
   {
     name: 'Ivo · Navigator',
+    heading: Math.PI,
     ...worldPoint(rooms[1].angle, -4, 52),
-    color: '#589dbd',
     line: 'Wayfarer is a home between worlds. Check the navigation table before heading into the unknown.',
   },
   {
     name: 'Ren · Engineer',
+    heading: Math.PI / 2,
     ...worldPoint(rooms[2].angle, 5, 46),
-    color: '#c57c60',
     line: 'One continuous loop. Quarters, commons, control, docks. Take either direction; you’ll always find your way back.',
   },
   {
     name: 'Sol · Crew',
+    heading: -Math.PI / 2,
     ...worldPoint(rooms[2].angle, -4, 53),
-    color: '#8eab7b',
     line: 'Grab something from the dispenser. Watching the stars from the promenade never gets old.',
   },
   {
     name: 'Ada · Surveyor',
+    heading: (-3 * Math.PI) / 4,
     ...worldPoint(Math.PI / 4, 0, 28),
-    color: '#8c87c5',
     line: 'I’ve been watching that planet all morning. Someday we’ll set foot down there.',
   },
   {
     name: 'Tess · Technician',
+    heading: (3 * Math.PI) / 4,
     ...worldPoint(-Math.PI / 4, 0, 32),
-    color: '#c49d66',
     line: 'The observation glass is rated for micrometeorites. You can enjoy the view.',
+  },
+  {
+    name: 'Niko · Flight technician',
+    ...worldPoint(rooms[0].angle, 6.5, 56),
+    heading: Math.PI,
+    line: 'Coolant lines are holding steady. We inspect every shuttle before clearing it for departure.',
+  },
+  {
+    name: 'Lena · Operations',
+    ...worldPoint(rooms[1].angle, 3, 54),
+    heading: Math.PI,
+    line: 'Air, water, power. Keep those three happy and a station starts to feel like a town.',
+  },
+  {
+    name: 'Jules · Botanist',
+    ...worldPoint(rooms[2].angle, -4, 50.5),
+    heading: Math.PI / 2,
+    line: 'Sol keeps asking when the next hydroponics harvest is ready. Another two days, if the grow lights behave.',
+  },
+  {
+    name: 'Oren · Cargo pilot',
+    ...worldPoint((-3 * Math.PI) / 4, 0, 28),
+    heading: Math.PI / 4,
+    line: 'Between deliveries I come here for the quiet. Best view on the whole station.',
   },
 ];
 export const stationInteractions: StationInteraction[] = [
@@ -299,15 +329,105 @@ export function createStation(onBoard: () => void = () => {}) {
         renderer.camera.near = 0.08;
         renderer.camera.updateProjectionMatrix();
         const cameraBlockers: THREE.Object3D[] = [];
+        type Finish = 'deck' | 'panel' | 'alloy' | 'fabric' | 'display';
+        const surfaceMaps = new Map<
+          Finish,
+          {
+            map: THREE.DataTexture;
+            bumpMap: THREE.DataTexture;
+            roughnessMap: THREE.DataTexture;
+          }
+        >();
+        // Build small, seamless material tiles once. The same seams, fasteners, and
+        // scuffs affect color, surface depth, and how the light catches each panel.
+        for (const finish of ['deck', 'panel', 'alloy', 'fabric'] as const) {
+          const size = 256;
+          const color = new Uint8Array(size * size * 4);
+          const height = new Uint8Array(color.length);
+          const roughness = new Uint8Array(color.length);
+          for (let y = 0; y < size; y++) {
+            for (let x = 0; x < size; x++) {
+              const index = (y * size + x) * 4;
+              const grain = (Math.sin(x * 127.1 + y * 311.7) * 43758.5453) % 1;
+              const edge = Math.min(x, y, size - 1 - x, size - 1 - y);
+              const bolt = Math.hypot(
+                Math.min(Math.abs(x - 13), Math.abs(x - 243)),
+                Math.min(Math.abs(y - 13), Math.abs(y - 243)),
+              );
+              let shade = 224 + grain * 9;
+              let depth = 130 + grain * 4;
+              let matte = 180 + grain * 15;
+              if (finish === 'deck' || finish === 'panel') {
+                if (edge < 3) {
+                  shade = 65;
+                  depth = 70;
+                  matte = 230;
+                } else if (edge < 6) {
+                  shade = 180;
+                  depth = 115;
+                }
+                if (bolt < 3.5) {
+                  shade = bolt < 2 ? 100 : 205;
+                  depth = bolt < 2 ? 95 : 155;
+                  matte = 125;
+                }
+                // Raised tread stays away from panel edges; fine scratches break
+                // up the broad highlights without making the whole floor noisy.
+                if (finish === 'deck' && edge > 24 && (x + y) % 32 < 3) {
+                  shade -= 24;
+                  depth += 18;
+                }
+                if (y % 73 === 18 && x > 45 && x < 95) {
+                  shade += 12;
+                  matte -= 40;
+                }
+              } else if (finish === 'alloy') {
+                shade += Math.sin(y * 2.4) * 9;
+                matte = 115 + grain * 20;
+              } else {
+                const weave = (x % 4 < 2 ? 1 : -1) * (y % 4 < 2 ? 1 : -1);
+                shade += weave * 12;
+                depth += weave * 15;
+                matte = 240;
+              }
+              for (let channel = 0; channel < 3; channel++) {
+                color[index + channel] = shade;
+                height[index + channel] = depth;
+                roughness[index + channel] = matte;
+              }
+              color[index + 3] = height[index + 3] = roughness[index + 3] = 255;
+            }
+          }
+          const makeMap = (pixels: Uint8Array, colored = false) => {
+            const texture = new THREE.DataTexture(pixels, size, size);
+            texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+            texture.magFilter = THREE.LinearFilter;
+            texture.minFilter = THREE.LinearMipmapLinearFilter;
+            texture.generateMipmaps = true;
+            texture.anisotropy = 4;
+            if (colored) texture.colorSpace = THREE.SRGBColorSpace;
+            texture.needsUpdate = true;
+            textures.push(texture);
+            return texture;
+          };
+          surfaceMaps.set(finish, {
+            map: makeMap(color, true),
+            bumpMap: makeMap(height),
+            roughnessMap: makeMap(roughness),
+          });
+        }
         const materialCache = new Map<string, THREE.MeshStandardMaterial>();
-        const material = (color: string, glow: boolean) => {
-          const key = `${color}-${glow}`;
+        const material = (color: string, glow: boolean, finish: Finish = 'panel') => {
+          if (finish === 'display') return displayMaterial;
+          const key = `${color}-${glow}-${finish}`;
           let result = materialCache.get(key);
           if (!result) {
             result = new THREE.MeshStandardMaterial({
               color,
-              roughness: 0.65,
-              metalness: 0.25,
+              ...(!glow ? surfaceMaps.get(finish) : {}),
+              bumpScale: finish === 'deck' ? 0.025 : 0.012,
+              roughness: finish === 'fabric' ? 1 : 0.85,
+              metalness: finish === 'fabric' ? 0 : finish === 'alloy' ? 0.65 : 0.35,
               emissive: glow ? color : '#000000',
               emissiveIntensity: glow ? 1.2 : 0,
               side: THREE.DoubleSide,
@@ -316,6 +436,52 @@ export function createStation(onBoard: () => void = () => {}) {
           }
           return result;
         };
+        const displayMaterial = new THREE.MeshStandardMaterial({
+          color: '#b7d8dc',
+          emissive: '#88bcc5',
+          emissiveIntensity: 0.45,
+          roughness: 0.3,
+          metalness: 0.1,
+        });
+        const displayCanvas = document.createElement('canvas');
+        displayCanvas.width = 1024;
+        displayCanvas.height = 512;
+        const displayContext = displayCanvas.getContext('2d');
+        if (displayContext) {
+          const ctx = displayContext;
+          ctx.fillStyle = '#0b1820';
+          ctx.fillRect(0, 0, 1024, 512);
+          ctx.fillStyle = '#8dbbc4';
+          ctx.font = '24px monospace';
+          ctx.fillText('WAYFARER / SYSTEM MONITOR', 36, 48);
+          ctx.fillStyle = '#42616b';
+          ctx.fillRect(36, 68, 952, 2);
+          for (let row = 0; row < 3; row++) {
+            const y = 125 + row * 120;
+            ctx.fillStyle = '#76919a';
+            ctx.font = '20px monospace';
+            ctx.fillText(['LIFE SUPPORT', 'POWER GRID', 'DOCK TELEMETRY'][row], 36, y);
+            ctx.fillStyle = '#b4d5cf';
+            ctx.font = '30px monospace';
+            ctx.fillText(['101.3 kPa', '98.4 %', 'LINK ACTIVE'][row], 36, y + 44);
+            ctx.strokeStyle = '#67a9ad';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            for (let x = 330; x < 980; x += 4) {
+              const wave = Math.sin(x * 0.025 + row * 2) * Math.sin(x * 0.006) * 22;
+              if (x === 330) ctx.moveTo(x, y + 20 + wave);
+              else ctx.lineTo(x, y + 20 + wave);
+            }
+            ctx.stroke();
+            ctx.fillStyle = '#27414c';
+            ctx.fillRect(330, y + 57, 650, 1);
+          }
+          const texture = new THREE.CanvasTexture(displayCanvas);
+          texture.colorSpace = THREE.SRGBColorSpace;
+          texture.anisotropy = 4;
+          textures.push(texture);
+          displayMaterial.map = displayMaterial.emissiveMap = texture;
+        }
         const box = (
           x: number,
           y: number,
@@ -327,8 +493,32 @@ export function createStation(onBoard: () => void = () => {}) {
           glow = false,
           angle = 0,
           solid = false,
+          finish: Finish = 'panel',
         ) => {
-          const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), material(color, glow));
+          const geometry = new THREE.BoxGeometry(w, h, d);
+          const uv = geometry.getAttribute('uv');
+          const tileSize = finish === 'fabric' ? 0.5 : finish === 'alloy' ? 1 : 2;
+          const faces = [
+            [d, h],
+            [d, h],
+            [w, d],
+            [w, d],
+            [w, h],
+            [w, h],
+          ];
+          // Box faces have different sizes. Scale each face separately so a two
+          // meter plate stays two meters wide on a wall, floor, or long corridor.
+          for (let face = 0; finish !== 'display' && face < faces.length; face++) {
+            const [width, height] = faces[face];
+            for (let vertex = face * 4; vertex < face * 4 + 4; vertex++) {
+              uv.setXY(
+                vertex,
+                (uv.getX(vertex) * width) / tileSize,
+                (uv.getY(vertex) * height) / tileSize,
+              );
+            }
+          }
+          const mesh = new THREE.Mesh(geometry, material(color, glow, finish));
           mesh.position.set(x, y, z);
           mesh.rotation.y = angle;
           renderer.scene.add(mesh);
@@ -346,9 +536,10 @@ export function createStation(onBoard: () => void = () => {}) {
           color: string,
           glow = false,
           solid = false,
+          finish: Finish = 'panel',
         ) => {
           const p = worldPoint(angle, side, outward);
-          return box(p.x, y, p.z, w, h, d, color, glow, angle, solid);
+          return box(p.x, y, p.z, w, h, d, color, glow, angle, solid, finish);
         };
         const sign = (
           text: string,
@@ -392,10 +583,14 @@ export function createStation(onBoard: () => void = () => {}) {
           mesh.position.y = y;
           renderer.scene.add(mesh);
         };
-        const floor = new THREE.Mesh(
-          new THREE.RingGeometry(innerRadius, outerRadius, 192),
-          material('#344758', false),
-        );
+        const deck = new THREE.RingGeometry(innerRadius, outerRadius, 192);
+        const deckPositions = deck.getAttribute('position');
+        const deckUV = deck.getAttribute('uv');
+        // Project deck tiles onto the ring instead of stretching one tile around it.
+        for (let vertex = 0; vertex < deckPositions.count; vertex++) {
+          deckUV.setXY(vertex, deckPositions.getX(vertex) / 2, deckPositions.getY(vertex) / 2);
+        }
+        const floor = new THREE.Mesh(deck, material('#65737a', false, 'deck'));
         floor.rotation.x = -Math.PI / 2;
         renderer.scene.add(floor);
         // Floor lanes lead to the doors; low walls keep the cutaway view readable.
@@ -442,7 +637,7 @@ export function createStation(onBoard: () => void = () => {}) {
               34 * segment + 0.1,
               3.6,
               0.25,
-              i % 4 === 0 ? '#344b60' : '#263b4d',
+              i % 4 === 0 ? '#79858a' : '#5f7079',
               false,
               true,
             );
@@ -456,7 +651,7 @@ export function createStation(onBoard: () => void = () => {}) {
               34 * segment + 0.1,
               0.18,
               2.35,
-              '#263948',
+              '#46535b',
               false,
               true,
             );
@@ -474,32 +669,47 @@ export function createStation(onBoard: () => void = () => {}) {
         ring(26.1, 0.045, 1.1, '#7ec2d4');
         rooms.forEach((room) => {
           const a = room.angle;
-          radialBox(a, 0, 36.8, -0.15, 6, 0.3, 7.2, '#344758');
-          radialBox(a, 0, 51, -0.15, 22, 0.3, 22, '#354959');
-          for (let side = -10; side <= 10; side += 2) {
-            radialBox(a, side, 51, 0.005, 0.025, 0.01, 22, '#263a4b');
-          }
-          for (let outward = 42; outward < 62; outward += 2) {
-            radialBox(a, 0, outward, 0.005, 22, 0.01, 0.025, '#263a4b');
-          }
-          radialBox(a, 0, 36.8, 4.5, 6.2, 0.25, 7.2, '#263948', false, true);
-          radialBox(a, 0, 51, 5.8, 22.2, 0.3, 22.2, '#253747', false, true);
+          radialBox(a, 0, 36.8, -0.15, 6, 0.3, 7.2, '#65737a', false, false, 'deck');
+          radialBox(a, 0, 51, -0.15, 22, 0.3, 22, '#65737a', false, false, 'deck');
+          radialBox(a, 0, 36.8, 4.5, 6.2, 0.25, 7.2, '#46535b', false, true);
+          radialBox(a, 0, 51, 5.8, 22.2, 0.3, 22.2, '#414e57', false, true);
           // Leave a wide doorway in each shared wall. The same rectangles build the walls
           // and block movement, so the openings you see are the openings you can walk through.
           for (const side of [-1, 1]) {
             radialBox(a, side * 3.1, 36.8, 2.2, 0.2, 4.4, 6.4, '#435b6c', false, true);
-            radialBox(a, side * 7, 40, 2.9, 8, 5.8, 0.25, '#405768', false, true);
-            radialBox(a, side * 11, 51, 2.9, 0.25, 5.8, 22, '#344c60', false, true);
+            radialBox(a, side * 7, 40, 2.9, 8, 5.8, 0.25, '#78868c', false, true);
+            radialBox(a, side * 11, 51, 2.9, 0.25, 5.8, 22, '#64747d', false, true);
             radialBox(a, side * 2.9, 35, 2.1, 0.12, 4.2, 0.15, room.color, true);
             radialBox(a, side * 9.5, 51, 0.025, 0.05, 0.03, 20, room.color, true);
             for (const r of [44, 50, 57])
               radialBox(a, side * 10.8, r, 2.4, 0.12, 3.5, 0.5, '#61768a');
+            radialBox(a, side * 10.78, 54, 1.35, 0.12, 1.1, 2.4, '#25323a');
+            for (let slat = 0; slat < 7; slat++)
+              radialBox(
+                a,
+                side * 10.68,
+                54,
+                0.92 + slat * 0.14,
+                0.12,
+                0.045,
+                2.15,
+                '#7a8587',
+                false,
+                false,
+                'alloy',
+              );
+            radialBox(a, side * 8, 51, 5.42, 0.12, 0.14, 21, '#87918d', false, false, 'alloy');
+            radialBox(a, side * 10.8, 51, 0.18, 0.16, 0.32, 21.8, '#35434c');
           }
-          radialBox(a, 0, 62, 2.9, 22, 5.8, 0.25, '#405768', false, true);
-          radialBox(a, 0, 40, 5.1, 6, 1.4, 0.25, '#405768', false, true);
+          radialBox(a, 0, 62, 2.9, 22, 5.8, 0.25, '#78868c', false, true);
+          radialBox(a, 0, 40, 5.1, 6, 1.4, 0.25, '#78868c', false, true);
           radialBox(a, 0, 35, 4.25, 6, 0.12, 0.15, room.color, true);
           for (const outward of [44, 51, 58])
             radialBox(a, 0, outward, 5.6, 12, 0.08, 0.3, '#c3e3ec', true);
+          const lightPosition = worldPoint(a, 0, 51);
+          const roomLight = new THREE.PointLight('#e5eeeb', 18, 18, 2);
+          roomLight.position.set(lightPosition.x, 4.8, lightPosition.z);
+          renderer.scene.add(roomLight);
           const entrance = worldPoint(a, 0, 34.3);
           sign(
             `${room.code} / ${room.name.toUpperCase()}`,
@@ -535,7 +745,21 @@ export function createStation(onBoard: () => void = () => {}) {
             d: number,
             color: string,
             glow = false,
-          ) => radialBox(a, center.side + side, center.outward + outward, y, w, h, d, color, glow);
+            finish: Finish = 'alloy',
+          ) =>
+            radialBox(
+              a,
+              center.side + side,
+              center.outward + outward,
+              y,
+              w,
+              h,
+              d,
+              color,
+              glow,
+              false,
+              finish,
+            );
           if (item.kind === 'ship') {
             // A parked shuttle sits inside its collision footprint, leaving a path around it.
             box(item.x, 1.4, item.z, 3, 2, 8, '#aebdc8', false, a, true);
@@ -558,27 +782,61 @@ export function createStation(onBoard: () => void = () => {}) {
               false,
               a,
               true,
+              item.kind === 'bed' || item.kind === 'seat' ? 'fabric' : 'alloy',
             );
             if (item.kind === 'bed') {
-              prop(0, 0, 0.8, 2.8, 0.3, 4.8, '#bab6c9');
-              prop(0, 1.5, 1, 2.3, 0.2, 1, '#d9d7de');
+              prop(0, 0, 0.8, 2.8, 0.3, 4.8, '#bab6c9', false, 'fabric');
+              prop(0, -0.6, 0.97, 2.85, 0.06, 3.3, '#6c8791', false, 'fabric');
+              prop(0, 1.5, 1, 2.3, 0.2, 1, '#d9d7de', false, 'fabric');
             }
             if (['desk', 'console', 'navigation'].includes(item.kind)) {
+              prop(0, 0, item.height + 0.05, item.width * 0.9, 0.1, item.depth * 0.85, '#263741');
               prop(
                 0,
                 0,
-                item.height + 0.05,
-                item.width * 0.8,
-                0.08,
-                item.depth * 0.7,
-                '#66c5d9',
-                true,
+                item.height + 0.11,
+                item.width * 0.72,
+                0.025,
+                item.depth * 0.6,
+                '#b7d8dc',
+                false,
+                'display',
               );
               if (item.kind === 'console')
                 for (const side of [-3, 0, 3]) {
-                  const screen = prop(side, 0.5, 1.9, 2.2, 1, 0.15, '#6ad5e9', true);
+                  const housing = prop(side, 0.55, 1.9, 2.4, 1.2, 0.22, '#283942');
+                  housing.rotateX(-0.3);
+                  const screen = prop(
+                    side,
+                    0.41,
+                    1.9,
+                    2.15,
+                    0.95,
+                    0.025,
+                    '#b7d8dc',
+                    false,
+                    'display',
+                  );
                   screen.rotateX(-0.3);
                 }
+            }
+            if (item.kind === 'table' || item.kind === 'seat') {
+              prop(
+                0,
+                0,
+                item.height + 0.03,
+                item.width * 0.95,
+                0.08,
+                item.depth * 0.95,
+                item.kind === 'seat' ? '#87978b' : '#a49e89',
+                false,
+                item.kind === 'seat' ? 'fabric' : 'alloy',
+              );
+            }
+            if (item.kind === 'locker') {
+              for (const offset of [-0.65, 0.65])
+                prop(offset, -1.51, 1.3, 0.045, 2.35, 0.025, '#283942');
+              prop(0.35, -1.54, 1.4, 0.08, 0.45, 0.08, '#b6bdb8');
             }
             if (item.kind === 'supplies') prop(0, -2.02, 1.25, 1.5, 1, 0.04, '#a6d59a', true);
             if (item.kind === 'locker')
@@ -648,14 +906,19 @@ export function createStation(onBoard: () => void = () => {}) {
         };
         const player = person(stationSpawn.x, stationSpawn.z, character);
         player.group.rotation.y = Math.PI;
-        const models = crew.map((npc, index) =>
-          person(npc.x, npc.z, {
-            skin: 'warm',
-            hair: 'dark',
-            hairstyle: index % 2 ? 'crop' : 'swept',
+        const models = crew.map((npc, index) => {
+          const model = person(npc.x, npc.z, {
+            skin: skinTones[index % skinTones.length].id,
+            hair: hairColors[index % hairColors.length].id,
+            hairstyle: hairStyles[(index * 2) % hairStyles.length].id,
             suit: suitColors[index % suitColors.length].id,
-          }),
-        );
+          });
+          // Crew stay focused on their workstation, companion, or the view.
+          // Offset their idle poses so the whole station doesn't breathe in sync.
+          model.group.rotation.y = npc.heading;
+          for (let frame = 0; frame < index * 7; frame++) model.animate(0.05, 0);
+          return model;
+        });
         crew.forEach((npc) =>
           sign(npc.name, npc.x, 2.65, npc.z, Math.atan2(-npc.x, -npc.z), '#d0e2ea', 2.6),
         );
@@ -819,13 +1082,7 @@ export function createStation(onBoard: () => void = () => {}) {
             }
             const traveled = Math.hypot(position.x - previousX, position.z - previousZ);
             player.animate(dt, dt > 0 ? traveled / dt : 0);
-            models.forEach((model) => {
-              model.group.rotation.y = Math.atan2(
-                position.x - model.group.position.x,
-                position.z - model.group.position.z,
-              );
-              model.animate(dt, 0);
-            });
+            models.forEach((model) => model.animate(dt, 0));
           }
           const position = player.group.position;
           const nextInteraction = interactionAt(position.x, position.z);

@@ -4,7 +4,7 @@ import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { hairColors, skinTones, suitColors, type Character } from './character.ts';
 
 export type CharacterAppearance = Pick<Character, 'skin' | 'hair' | 'hairstyle' | 'suit'>;
-export const characterSpeeds = { walk: 1.75, run: 3.8 } as const;
+export const characterSpeeds = { walk: 2, run: 4.4 } as const;
 type Contour = [height: number, width: number, depth: number];
 
 // Registration and the station build this same model, so the preview shows the
@@ -861,12 +861,23 @@ export function createCharacterModel(appearance: CharacterAppearance) {
   let motion = 0;
   let running = 0;
   let idleTime = 0;
+  let gaitSpeed = 0;
   function animate(delta: number, speed: number) {
     const dt = Math.min(Math.max(delta, 0), 0.05);
-    const velocity = Math.max(0, speed);
+    const targetSpeed = Math.max(0, speed);
+    // Filter contact/collision noise and ease cadence into a new speed.
+    gaitSpeed += (targetSpeed - gaitSpeed) * (1 - Math.exp(-dt * 8));
+    const velocity = gaitSpeed;
     const blend = 1 - Math.exp(-dt * 12);
-    motion += ((velocity > 0.05 ? 1 : 0) - motion) * blend;
-    running += (THREE.MathUtils.smoothstep(velocity, 2, 3.6) - running) * blend;
+    motion += (THREE.MathUtils.smoothstep(targetSpeed, 0.02, 0.35) - motion) * blend;
+    running +=
+      (THREE.MathUtils.smoothstep(
+        velocity,
+        characterSpeeds.walk + 0.15,
+        characterSpeeds.run - 0.2,
+      ) -
+        running) *
+      blend;
     idleTime += dt;
     const duty = THREE.MathUtils.lerp(0.62, 0.4, running);
     const span = THREE.MathUtils.lerp(0.82, 1.02, running);
@@ -877,9 +888,14 @@ export function createCharacterModel(appearance: CharacterAppearance) {
       const cycle = (phase + offset) % 1;
       const swing = cycle >= duty;
       const t = swing ? (cycle - duty) / (1 - duty) : cycle / duty;
-      const z = (swing ? -Math.cos(t * Math.PI) : 1 - 2 * t) * span * 0.5 * motion;
+      // Match the stance velocity at both ends of the swing and ease the
+      // lift to zero speed at contact, rather than kicking into a sine arc.
+      const recovery = t * t * t * (10 + t * (-15 + t * 6));
+      const tangent = (1 - duty) / duty;
+      const travel = swing ? -0.5 - tangent * t + (1 + tangent) * recovery : 0.5 - t;
+      const z = travel * span * motion;
       const lift = swing
-        ? Math.sin(t * Math.PI) * THREE.MathUtils.lerp(0.11, 0.28, running) * motion
+        ? Math.sin(t * Math.PI) ** 2 * THREE.MathUtils.lerp(0.07, 0.18, running) * motion
         : 0;
       return { z, lift, swing, t };
     });
@@ -889,7 +905,15 @@ export function createCharacterModel(appearance: CharacterAppearance) {
     // Lower the hips as the stance leg reaches forward or back. Solving both
     // legs against the floor keeps the boots planted instead of skating in arcs.
     for (const foot of feet) {
-      bob = Math.min(bob, Math.sqrt(Math.max(0, 0.908 ** 2 - foot.z ** 2)) - 0.91 + foot.lift);
+      const limit =
+        Math.sqrt(Math.max(0, THREE.MathUtils.lerp(0.908, 0.88, motion) ** 2 - foot.z ** 2)) -
+        0.91 +
+        foot.lift;
+      // A smooth minimum blends support between the legs. Keeping a little
+      // knee bend also avoids the unstable fully straight configuration.
+      const softness = 0.002 + 0.043 * motion;
+      bob =
+        Math.min(bob, limit) - softness * Math.log1p(Math.exp(-Math.abs(bob - limit) / softness));
     }
     group.position.y = bob;
     torso.rotation.x = running * 0.075 * motion;
@@ -915,12 +939,14 @@ export function createCharacterModel(appearance: CharacterAppearance) {
         );
       leg.rotation.x = hipAngle;
       knee.lower.rotation.x = kneeAngle;
-      const toe = foot.swing ? -Math.sin(foot.t * Math.PI * 2) * 0.2 * motion : 0;
+      const toe = foot.swing
+        ? -Math.sin(foot.t * Math.PI * 2) * Math.sin(foot.t * Math.PI) ** 2 * 0.2 * motion
+        : 0;
       knee.end.rotation.x = -hipAngle - kneeAngle + toe;
       const swing = Math.cos((phase + side * 0.5) * Math.PI * 2);
       arm.rotation.x = swing * THREE.MathUtils.lerp(0.26, 0.6, running) * motion;
       elbow.lower.rotation.x =
-        -0.12 - running * 0.95 * motion - (1 - running) * Math.max(0, -swing) * 0.18 * motion;
+        -0.12 - running * 0.95 * motion - (1 - running) * (1 - swing) * 0.09 * motion;
       arm.rotation.z = (side === 0 ? -1 : 1) * (0.055 + running * 0.025);
       arm.rotation.x += Math.sin(idleTime * 1.6 + side) * 0.012 * (1 - motion);
     }

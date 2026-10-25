@@ -143,3 +143,47 @@ test.each(['walk', 'run'] as const)(
     model.dispose();
   },
 );
+
+test.each(['walk', 'run'] as const)('%s stays smooth through lift-off and landing', (gait) => {
+  const model = createCharacterModel({
+    skin: 'sand',
+    hair: 'dark',
+    hairstyle: 'crop',
+    suit: 'sage',
+  });
+  const joints = model.limbs.map((limb) => {
+    const mesh = limb.children.find(
+      (child) => (child as THREE.SkinnedMesh).isSkinnedMesh,
+    ) as THREE.SkinnedMesh;
+    return mesh.skeleton.bones[1];
+  });
+  let previous: number[] | undefined;
+  let previousVelocity: number[] | undefined;
+  let peakAcceleration = 0;
+  // A steady high sampling rate exposes contact snaps that a pose snapshot
+  // misses. Ignore the initial blend, then cover several complete strides.
+  for (let frame = 0; frame < 600; frame++) {
+    model.animate(1 / 120, characterSpeeds[gait]);
+    const pose = [
+      ...model.limbs.map((limb) => limb.rotation.x),
+      ...joints.map((joint) => joint.rotation.x),
+    ];
+    if (previous) {
+      const velocity = pose.map((angle, index) => (angle - previous![index]) * 120);
+      if (previousVelocity && frame > 120) {
+        for (let index = 0; index < velocity.length; index++) {
+          peakAcceleration = Math.max(
+            peakAcceleration,
+            Math.abs(velocity[index] - previousVelocity[index]) * 120,
+          );
+        }
+      }
+      previousVelocity = velocity;
+    }
+    previous = pose;
+  }
+  // The original contact snaps exceeded 3,900 (walk) and 6,600 (run)
+  // radians/s². Allow athletic motion, but reject those abrupt reversals.
+  expect(peakAcceleration).toBeLessThan(800);
+  model.dispose();
+});
